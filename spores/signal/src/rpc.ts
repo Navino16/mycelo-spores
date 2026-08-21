@@ -146,13 +146,20 @@ export class SignalRpc {
   }
 
   #handleLine(line: string): void {
-    let parsed: Record<string, unknown>
+    let raw: unknown
     try {
-      parsed = JSON.parse(line) as Record<string, unknown>
+      raw = JSON.parse(line)
     } catch (e) {
       this.#options.onProtocolError?.(e as Error, line)
       return
     }
+    // JSON.parse('null') and JSON.parse('7') both succeed; reading .id off either throws
+    // inside the socket data callback, where no handler can catch it.
+    if (typeof raw !== 'object' || raw === null) {
+      this.#options.onProtocolError?.(new Error('line is valid JSON but not an object'), line)
+      return
+    }
+    const parsed = raw as Record<string, unknown>
     const id = parsed.id
     if (typeof id === 'string' && this.#pending.has(id)) {
       const pending = this.#pending.get(id)

@@ -484,7 +484,7 @@ describe('the signal hypha lifecycle', () => {
     daemon.stop()
   })
 
-  it('logs and skips a line that does not parse as JSON, rather than throwing', async () => {
+  it('logs and skips a line that is not a JSON-RPC object, rather than throwing', async () => {
     const socketPath = tmpSocketPath()
     const daemon = startFakeDaemon(socketPath, (request) => respondToVersion(request, daemon))
     const { logger, warnings } = capturingLogger()
@@ -492,11 +492,17 @@ describe('the signal hypha lifecycle', () => {
     instance.listen()
 
     daemon.writeRaw('not json{{{')
+    // Valid JSON that is not an object. Reading `.id` off either would throw a TypeError
+    // inside the socket data callback, where no handler can catch it.
+    daemon.writeRaw('null')
+    daemon.writeRaw('7')
     daemon.notify(frame('inbound-dm'))
     await wait(50)
 
-    expect(warnings.some((w) => w.message.includes('does not parse'))).toBe(true)
-    // The daemon connection survives the bad line: the next, valid notification still arrives.
+    const reasons = warnings.map((w) => String(w.meta?.error))
+    expect(reasons.filter((r) => r.includes('JSON'))).toHaveLength(3)
+    expect(reasons.filter((r) => r === 'line is valid JSON but not an object')).toHaveLength(2)
+    // The daemon connection survives every bad line: the next, valid notification still arrives.
     expect(emitted).toHaveLength(1)
 
     await instance.stop()

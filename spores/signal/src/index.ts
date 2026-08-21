@@ -56,7 +56,7 @@ export default {
           },
           {
             onProtocolError: (error, line) =>
-              ctx.logger.warn('signal: received a line that does not parse as JSON', { error: error.message, line }),
+              ctx.logger.warn('signal: ignored an unusable line from the daemon', { error: error.message, line }),
           },
         )
         await client.connect()
