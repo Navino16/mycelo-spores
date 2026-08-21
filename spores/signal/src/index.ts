@@ -80,7 +80,11 @@ export default {
         if (out.reactTo !== undefined || (out.attachments?.length ?? 0) > 0) {
           throw new Error('signal: attachments and reactions are declared but not implemented yet')
         }
-        if (out.text === undefined) return
+        // The core's "at least one field" invariant is cleared by attachments: [], which then
+        // leaves nothing to send. Returning silently would lose the reply with no trace.
+        if (out.text === undefined) {
+          throw new Error('signal: nothing to send — the reply carried no text')
+        }
         await rpc.request('send', { account: config.account, message: out.text, ...sendTarget(conversationId) })
       },
       listGroupMembers: async (groupId: string): Promise<readonly ChannelIdentity[]> => {

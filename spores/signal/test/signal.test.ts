@@ -284,6 +284,22 @@ describe('the signal hypha lifecycle', () => {
     daemon.stop()
   })
 
+  it('refuses a reply that carries no text at all', async () => {
+    const socketPath = tmpSocketPath()
+    const daemon = startFakeDaemon(socketPath, (request) => respondToVersion(request, daemon))
+    const { instance } = await connected(daemon, socketPath)
+
+    // attachments: [] clears the core's "at least one field" check and then leaves nothing to
+    // send, so this reaches the spore and must not vanish.
+    expect(instance.send(SENDER_UUID, { attachments: [] })).rejects.toThrow(/nothing to send/)
+    const before = daemon.requests.length
+    await wait(20)
+    expect(daemon.requests.length).toBe(before)
+
+    await instance.stop()
+    daemon.stop()
+  })
+
   it('rejects on a per-recipient send failure, naming the recipient and the reason', async () => {
     const socketPath = tmpSocketPath()
     const daemon = startFakeDaemon(socketPath, (request) => {
