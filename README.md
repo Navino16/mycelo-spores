@@ -18,8 +18,12 @@ Four kinds of plugin live here:
 
 ## Status
 
-Empty. Plugins arrive with phase 7 of the core implementation; the release automation
-arrives with phase 8 and its mechanism is not yet decided.
+Four spores: `help`, `links`, `group-gate` and `signal`. They require `@mycelo/septum@^0.8.0` and a
+Mycelo core at phase 7 or later. `signal` additionally requires a `signal-cli` daemon the operator
+runs themselves — see `spores/signal/README.md`.
+
+Release automation arrives with phase 8 and its mechanism is not yet decided, so a spore is installed
+today by pointing `mycelo.yaml`'s `spores:` at a checked-out `spores/` directory.
 
 Contributing guidelines and the plugin authoring guide will land with the core's
 documentation phase.
