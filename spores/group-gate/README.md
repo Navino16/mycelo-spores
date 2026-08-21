@@ -89,6 +89,9 @@ Worked example, as written through `PUT /api/plugins/group-gate/settings`:
 - `start()` calls `ctx.requireCapability(channel, 'group_membership')` and lets it throw. A gate
   that cannot enforce its rule goes dormant rather than admitting everyone.
 - `inspect()` allows any message on a channel other than the configured one.
+- The gate filters the **sender**, not the conversation. A member of the configured group is
+  admitted from anywhere on that channel — a different group the bot belongs to, or a direct
+  message. It answers who may use the bot, not where.
 - On the configured channel, it resolves membership through `ctx.groupMembers(channel, groupId)`
   and admits only a sender found in that list.
 - A `null` answer from `groupMembers` means the channel cannot report membership right now — that
