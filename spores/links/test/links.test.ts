@@ -60,6 +60,10 @@ describe('the links spore', () => {
     const text = sent[0]?.text ?? ''
     expect(text).toContain('radarr')
     expect(text).toContain('jellyfin')
+    // One catalogue key carries the whole layout, so a translator can reorder it: the lines
+    // must arrive as a parameter of reply.list, not be joined onto it in code.
+    expect(text.startsWith('reply.list({"lines":')).toBe(true)
+    expect(text.split('\n')).toHaveLength(1)
   })
 
   it('renders a service with a note differently from one without', async () => {

@@ -28,7 +28,9 @@ export default {
         const lines = services.map((s) => (s.note === undefined
           ? ctx.t('reply.line', { label: s.label, url: s.url })
           : ctx.t('reply.noted', { label: s.label, url: s.url, note: s.note })))
-        await ctx.reply({ text: [ctx.t('reply.header'), ...lines].join('\n') })
+        // The whole layout lives in one key, as in the help spore: joining a header in code
+        // leaves a translator unable to reorder it.
+        await ctx.reply({ text: ctx.t('reply.list', { lines: lines.join('\n') }) })
       },
       handleLink: async (invocation, ctx) => {
         const label = invocation.args.label
