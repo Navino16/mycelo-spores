@@ -1,0 +1,7 @@
+reply:
+  list: "commands:\n{lines}"
+  line: "{name} — {description}"
+  none: "you are not authorized to use any command"
+command:
+  help:
+    description: "List the commands you are authorized to invoke, with their description"

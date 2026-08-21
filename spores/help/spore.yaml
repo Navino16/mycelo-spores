@@ -1,0 +1,11 @@
+kind: enzyme
+name: help
+septum: "^0.8"
+description: Lists the commands the caller is authorized to invoke, described in their own language.
+requires:
+  - rhiza: mycelium
+    scopes: [commands.read]
+commands:
+  - name: help
+    description: command.help.description
+    code: handleHelp

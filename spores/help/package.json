@@ -1,0 +1,10 @@
+{
+  "name": "@mycelo/spore-help",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "@mycelo/septum": "^0.8.0"
+  }
+}

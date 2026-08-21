@@ -1,0 +1,7 @@
+reply:
+  list: "commandes :\n{lines}"
+  line: "{name} — {description}"
+  none: "vous n'êtes autorisé à utiliser aucune commande"
+command:
+  help:
+    description: "Lister les commandes que vous êtes autorisé à utiliser, avec leur description"
