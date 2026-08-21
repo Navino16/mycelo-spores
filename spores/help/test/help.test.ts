@@ -84,8 +84,6 @@ describe('the help spore', () => {
       name: 'help',
       module,
       manifest,
-      // enzymeChecks invokes handlers with no required args, so context is required
-      // and EnzymeHarness.name is too — both missing from the brief's draft, see report.
       context: () => stubContext('en', []).ctx,
       catalogs: {
         en: parseYaml(readFileSync(join(here, 'translations', 'en.yaml'), 'utf8')),
