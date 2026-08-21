@@ -13,6 +13,8 @@ export interface FakeDaemon {
   respond(id: string, result: unknown): void
   respondError(id: string, error: { code: number; message: string; data: unknown }): void
   notify(frame: unknown): void
+  /** Writes an unencoded line, for testing how the client handles a line that is not JSON. */
+  writeRaw(line: string): void
   /** Simulates the daemon dying: a graceful FIN, which findings §6 measured as the real signal. */
   killClient(): void
   stop(): void
@@ -38,6 +40,7 @@ export function startFakeDaemon(socketPath: string, handle: Handler): FakeDaemon
     respond: (id, result) => write({ jsonrpc: '2.0', result, id }),
     respondError: (id, error) => write({ jsonrpc: '2.0', error, id }),
     notify: (frame) => write(frame),
+    writeRaw: (line) => client?.write(`${line}\n`),
     killClient: () => client?.end(),
     stop: () => listener.stop(true),
   }

@@ -1,5 +1,5 @@
 import { defineConfig } from '@mycelo/septum'
-import type { ChannelIdentity, HyphaContext, HyphaModule, OutgoingContent } from '@mycelo/septum'
+import type { ChannelIdentity, HyphaContext, HyphaModule, Logger, OutgoingContent } from '@mycelo/septum'
 import { z } from 'zod'
 import { SignalRpc } from './rpc.js'
 import { normalize } from './normalize.js'
@@ -41,17 +41,26 @@ export default {
   configSchema: defineConfig(schema),
   create: () => {
     let config: Config | null = null
+    let logger: Logger | null = null
     let rpc: SignalRpc | null = null
     let listening = false
 
     return {
       connect: async (ctx: HyphaContext<Config>) => {
         config = ctx.config
-        const client = new SignalRpc(config.socket, (notification) => {
-          if (notification.method !== 'receive') return
-          const message = normalize(notification)
-          if (message !== null && listening) ctx.emit(message)
-        })
+        logger = ctx.logger
+        const client = new SignalRpc(
+          config.socket,
+          (notification) => {
+            if (notification.method !== 'receive') return
+            const message = normalize(notification)
+            if (message !== null && listening) ctx.emit(message)
+          },
+          {
+            onProtocolError: (error, line) =>
+              ctx.logger.warn('signal: received a line that does not parse as JSON', { error: error.message, line }),
+          },
+        )
         await client.connect()
         rpc = client
       },
@@ -68,20 +77,38 @@ export default {
         if (rpc === null || config === null) {
           throw new Error('signal hypha sent before connect()')
         }
+        // findings: not measured. Silently dropping either would be the exact
+        // silent-reply-loss class this project keeps paying for.
+        if (out.reactTo !== undefined || (out.attachments?.length ?? 0) > 0) {
+          throw new Error('signal: attachments and reactions are declared but not implemented yet')
+        }
         if (out.text === undefined) return
         await rpc.request('send', { account: config.account, message: out.text, ...sendTarget(conversationId) })
       },
       listGroupMembers: async (groupId: string): Promise<readonly ChannelIdentity[]> => {
         if (rpc === null || config === null) return []
-        let group = await findGroup(rpc, config.account, groupId)
-        if (group === undefined) {
-          // findings §8: a linked device does not learn about a group by itself. One
-          // sync-and-retry on a miss makes staleness self-correcting rather than permanent.
-          await rpc.request('sendSyncRequest', {}).catch(() => undefined)
-          group = await findGroup(rpc, config.account, groupId)
+        try {
+          let group = await findGroup(rpc, config.account, groupId)
+          if (group === undefined) {
+            // findings §8: a linked device does not learn about a group by itself. One
+            // sync-and-retry on a miss makes staleness self-correcting rather than permanent.
+            try {
+              await rpc.request('sendSyncRequest', { account: config.account })
+            } catch (e) {
+              logger?.warn('signal: sendSyncRequest failed while resolving group membership', {
+                error: (e as Error).message,
+              })
+            }
+            group = await findGroup(rpc, config.account, groupId)
+          }
+          if (group === undefined) return []
+          return group.members.map((member) => ({ channel: 'signal', externalId: member.uuid }))
+        } catch (e) {
+          // A dead daemon must silence only signal's own groups, not every channel: an
+          // enforcing inhibitor treats a rejection here as "refuse everything" (chain.ts).
+          logger?.warn('signal: listGroupMembers failed', { error: (e as Error).message })
+          return []
         }
-        if (group === undefined) return []
-        return group.members.map((member) => ({ channel: 'signal', externalId: member.uuid }))
       },
     }
   },

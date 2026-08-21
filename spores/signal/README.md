@@ -17,8 +17,12 @@ is for native npm dependencies, not this), so the requirement lives here.
    docker run --rm --name mycelo-signald --user "$(id -u):$(id -g)" \
      -v "$HOME/.local/share/signal-cli:/data" \
      registry.gitlab.com/packaging/signal-cli/signal-cli-native:latest \
-     -a +33700000000 daemon --socket /data/socket --receive-mode on-start
+     -d /data daemon --socket /data/socket --receive-mode on-start
    ```
+
+   `-d /data` is what points `signal-cli` at the mounted volume — without it the daemon reads its
+   default data directory inside a `--rm` container and will not find the account you just linked
+   or registered.
 
    `--user` matters: the published image runs as uid 101, and a host-owned mount without it fails
    every write with `Permission denied`. Running as your own user also makes the socket ordinarily
@@ -60,8 +64,9 @@ stricter than the service it configures.
 
 There is no JSON-RPC handshake on connect — `signal-cli` sends nothing at all. A successful socket
 connection is therefore not proof the daemon is alive; `connect()` makes one free, side-effect-free
-`version` request and rejects, **naming the socket path**, if nothing answers. That message is the
-only thing standing between "the daemon isn't running" and a silent, permanently dormant plugin.
+`version` request and rejects, **naming the socket path**, if the daemon answers with an error, or
+if nothing answers within a few seconds. That message is the only thing standing between "the
+daemon isn't running" and a silent, permanently dormant plugin.
 
 ## Identity: UUIDs, not phone numbers
 
@@ -70,6 +75,15 @@ number — a message's `sender.externalId` and a group member's UUID are the *sa
 what lets `group-gate` compare them. An operator reading `channel_identity` for this channel will
 see UUIDs, not the numbers they think in; the sender's profile name (not under their control by
 anyone but them) surfaces separately as `displayName`.
+
+## A group's conversation id is `group:<groupId>`
+
+This spore needs to tell, from an otherwise-opaque `conversationId`, whether a reply goes to a
+person or to a group — so a group's conversation id is the daemon's own base64 `groupId` prefixed
+with `group:` (a direct message's conversation id is just the sender's uuid, with no prefix). This
+is internal to the spore, not something `signal-cli` sends, but an operator still has to type it:
+it is the value `/broadcast-add` or any other conversation-id-taking command needs for a Signal
+group.
 
 ## Group membership can be stale, and self-corrects on the next miss
 
@@ -82,10 +96,11 @@ still is not visible, check whether `signal-cli` itself has learned it before su
 ## Not implemented
 
 Attachments and reactions are declared capabilities — the channel has them — but nothing in this
-phase sends or receives either, and neither was exercised against the real daemon. Reconnection
-after the daemon disappears is not attempted: `send()` refuses once the socket has closed rather
-than silently dropping a reply, but recovering the connection is left to the operator restarting
-the plugin (or Mycelo).
+phase sends or receives either, and neither was exercised against the real daemon. `send()`
+**throws** rather than silently dropping a reply that carries one, so a command declaring either
+capability fails loudly on this channel instead of losing its reply with no trace. Reconnection
+after the daemon disappears is not attempted either: `send()` refuses once the socket has closed,
+but recovering the connection is left to the operator restarting the plugin (or Mycelo).
 
 ## Compatibility
 

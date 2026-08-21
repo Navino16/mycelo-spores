@@ -7,6 +7,7 @@ import { hyphaChecks } from '@mycelo/septum/conformance'
 import type { HyphaContext, IncomingMessage, Logger } from '@mycelo/septum'
 import module from '../src/index.js'
 import { normalize } from '../src/normalize.js'
+import { SignalRpc } from '../src/rpc.js'
 import { startFakeDaemon, type FakeDaemon, type FakeRequest } from './fake-daemon.js'
 
 const here = join(import.meta.dirname, '..')
@@ -72,16 +73,43 @@ const noopLogger: Logger = {
   child: () => noopLogger,
 }
 
-function context(config: { socket: string; account: string }, emitted: IncomingMessage[]): HyphaContext<typeof config> {
-  return { config, logger: noopLogger, emit: (message) => emitted.push(message) }
+interface LoggedCall {
+  message: string
+  meta?: Record<string, unknown>
 }
 
-async function connected(daemon: FakeDaemon, socketPath: string, account = '+33700000000') {
+/** A logger that records warn() calls, for asserting a failure was logged rather than swallowed. */
+function capturingLogger(): { logger: Logger; warnings: LoggedCall[] } {
+  const warnings: LoggedCall[] = []
+  const logger: Logger = {
+    debug: () => undefined,
+    info: () => undefined,
+    warn: (message, meta) => {
+      warnings.push({ message, meta })
+    },
+    error: () => undefined,
+    child: () => logger,
+  }
+  return { logger, warnings }
+}
+
+function context(
+  config: { socket: string; account: string },
+  emitted: IncomingMessage[],
+  logger: Logger = noopLogger,
+): HyphaContext<typeof config> {
+  return { config, logger, emit: (message) => emitted.push(message) }
+}
+
+async function connected(daemon: FakeDaemon, socketPath: string, account = '+33700000000', logger: Logger = noopLogger) {
   const instance = module.create()
   const emitted: IncomingMessage[] = []
-  const ctx = context({ socket: socketPath, account }, emitted)
+  const ctx = context({ socket: socketPath, account }, emitted, logger)
   await instance.connect(ctx)
-  return { instance, emitted, daemon: daemon }
+  // connect() must prove liveness with a real request — findings §1: there is no handshake,
+  // so a successful Bun.connect alone is not proof the daemon answers.
+  expect(daemon.requests[0]?.method).toBe('version')
+  return { instance, emitted, daemon }
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -92,6 +120,31 @@ describe('the signal hypha lifecycle', () => {
     const instance = module.create()
     const ctx = context({ socket: socketPath, account: '+33700000000' }, [])
     expect(instance.connect(ctx)).rejects.toThrow(socketPath)
+  })
+
+  it('fails naming the socket path when the liveness request itself errors', async () => {
+    const socketPath = tmpSocketPath()
+    const daemon = startFakeDaemon(socketPath, (request) => {
+      if (request.method === 'version') daemon.respondError(request.id, { code: -32601, message: 'boom', data: null })
+    })
+    const instance = module.create()
+    const ctx = context({ socket: socketPath, account: '+33700000000' }, [])
+    // The daemon accepted the connection and answered — just not with success. Distinct from
+    // the missing-socket case above: this exercises the catch around the version request itself.
+    expect(instance.connect(ctx)).rejects.toThrow(socketPath)
+    daemon.stop()
+  })
+
+  it('gives up on an accepting-but-silent daemon rather than hanging germination forever', async () => {
+    const socketPath = tmpSocketPath()
+    // Accepts the connection and never answers anything — findings §1 measured no handshake,
+    // and nothing distinguishes this from a daemon that will answer eventually, so connect()
+    // must not wait unboundedly.
+    const daemon = startFakeDaemon(socketPath, () => undefined)
+    const rpc = new SignalRpc(socketPath, () => undefined, { livenessTimeoutMs: 50 })
+    expect(rpc.connect()).rejects.toThrow(socketPath)
+    await wait(100)
+    daemon.stop()
   })
 
   it('does not emit between connect() and listen(), and does emit after', async () => {
@@ -177,6 +230,24 @@ describe('the signal hypha lifecycle', () => {
     daemon.stop()
   })
 
+  it('refuses an attachment or a reaction rather than silently dropping the reply', async () => {
+    const socketPath = tmpSocketPath()
+    const daemon = startFakeDaemon(socketPath, (request) => respondToVersion(request, daemon))
+    const { instance } = await connected(daemon, socketPath)
+
+    // Both capabilities are declared in spore.yaml but unimplemented (findings: not measured).
+    // Silence here would be the exact silent-reply-loss class this project keeps paying for.
+    expect(instance.send(SENDER_UUID, { reactTo: { messageId: 'm:1', emoji: '👍' } })).rejects.toThrow(
+      /not implemented/,
+    )
+    expect(
+      instance.send(SENDER_UUID, { attachments: [{ kind: 'url', url: 'https://example.com/x.png' }] }),
+    ).rejects.toThrow(/not implemented/)
+
+    await instance.stop()
+    daemon.stop()
+  })
+
   it('rejects on a per-recipient send failure, naming the recipient and the reason', async () => {
     const socketPath = tmpSocketPath()
     const daemon = startFakeDaemon(socketPath, (request) => {
@@ -237,7 +308,8 @@ describe('the signal hypha lifecycle', () => {
     await wait(50)
 
     const before = daemon.requests.length
-    expect(instance.send(SENDER_UUID, { text: 'hello' })).rejects.toThrow()
+    // A bare .toThrow() would also pass on a null-socket TypeError; name the diagnostic.
+    expect(instance.send(SENDER_UUID, { text: 'hello' })).rejects.toThrow(socketPath)
     // The refusal must be pre-emptive: no send request should have reached the socket.
     expect(daemon.requests.length).toBe(before)
 
@@ -328,6 +400,68 @@ describe('the signal hypha lifecycle', () => {
 
     const members = await instance.listGroupMembers?.(GROUP_ID)
     expect(members).toEqual([])
+
+    await instance.stop()
+    daemon.stop()
+  })
+
+  it('passes the account with sendSyncRequest, and logs rather than swallowing a sync failure', async () => {
+    const socketPath = tmpSocketPath()
+    const account = '+33700000000'
+    const daemon = startFakeDaemon(socketPath, (request) => {
+      if (respondToVersion(request, daemon)) return
+      if (request.method === 'sendSyncRequest') {
+        daemon.respondError(request.id, { code: -1, message: 'sync unavailable', data: null })
+        return
+      }
+      if (request.method === 'listGroups') daemon.respond(request.id, [])
+    })
+    const { logger, warnings } = capturingLogger()
+    const { instance } = await connected(daemon, socketPath, account, logger)
+
+    const members = await instance.listGroupMembers?.(GROUP_ID)
+
+    const syncRequest = daemon.requests.find((r) => r.method === 'sendSyncRequest')
+    expect(syncRequest?.params).toEqual({ account })
+    expect(members).toEqual([])
+    // A rejected sendSyncRequest must be visible to the operator, not merely swallowed.
+    expect(warnings.some((w) => w.message.includes('sendSyncRequest'))).toBe(true)
+
+    await instance.stop()
+    daemon.stop()
+  })
+
+  it('answers an empty membership list rather than rejecting once the daemon has died', async () => {
+    const socketPath = tmpSocketPath()
+    const daemon = startFakeDaemon(socketPath, (request) => respondToVersion(request, daemon))
+    const { logger } = capturingLogger()
+    const { instance } = await connected(daemon, socketPath, '+33700000000', logger)
+
+    daemon.killClient()
+    await wait(50)
+
+    // A rejection here would make an enforcing group-gate refuse every channel, not just
+    // signal's own group (chain.ts's blast radius for an inhibitor throw).
+    const members = await instance.listGroupMembers?.(GROUP_ID)
+    expect(members).toEqual([])
+
+    daemon.stop()
+  })
+
+  it('logs and skips a line that does not parse as JSON, rather than throwing', async () => {
+    const socketPath = tmpSocketPath()
+    const daemon = startFakeDaemon(socketPath, (request) => respondToVersion(request, daemon))
+    const { logger, warnings } = capturingLogger()
+    const { instance, emitted } = await connected(daemon, socketPath, '+33700000000', logger)
+    instance.listen()
+
+    daemon.writeRaw('not json{{{')
+    daemon.notify(frame('inbound-dm'))
+    await wait(50)
+
+    expect(warnings.some((w) => w.message.includes('does not parse'))).toBe(true)
+    // The daemon connection survives the bad line: the next, valid notification still arrives.
+    expect(emitted).toHaveLength(1)
 
     await instance.stop()
     daemon.stop()

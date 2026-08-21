@@ -38,7 +38,9 @@ export function normalize(frame: unknown): IncomingMessage | null {
   if (!isReceiveNotification(frame)) return null
   const { envelope } = frame.params
   const dataMessage = envelope.dataMessage
-  if (dataMessage === undefined || dataMessage.message === null) return null
+  // Covers both a `dataMessage` missing `message` entirely and one carrying `null`
+  // (a remote delete, findings §4) — either would otherwise violate IncomingMessage.text: string.
+  if (dataMessage === undefined || typeof dataMessage.message !== 'string') return null
 
   const groupInfo = dataMessage.groupInfo
   const conversationId = groupInfo === undefined ? envelope.sourceUuid : `group:${groupInfo.groupId}`
