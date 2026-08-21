@@ -2,7 +2,7 @@ import { defineConfig } from '@mycelo/septum'
 import type { ChannelIdentity, HyphaContext, HyphaModule, Logger, OutgoingContent } from '@mycelo/septum'
 import { z } from 'zod'
 import { SignalRpc } from './rpc.js'
-import { normalize } from './normalize.js'
+import { GROUP_PREFIX, normalize } from './normalize.js'
 
 const schema = z.object({
   socket: z.string().min(1),
@@ -21,8 +21,6 @@ interface SignalGroup {
   id: string
   members: SignalGroupMember[]
 }
-
-const GROUP_PREFIX = 'group:'
 
 /** Groups send with `groupId`, direct messages with `recipient` (findings §3). */
 function sendTarget(conversationId: string): { groupId: string } | { recipient: readonly [string] } {

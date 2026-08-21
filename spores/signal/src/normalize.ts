@@ -23,6 +23,9 @@ interface SignalReceiveNotification {
   params: { envelope: SignalEnvelope; account: string }
 }
 
+/** A group's conversation id. Shared with send(), which must route back by groupId, not recipient. */
+export const GROUP_PREFIX = 'group:'
+
 function isReceiveNotification(frame: unknown): frame is SignalReceiveNotification {
   if (typeof frame !== 'object' || frame === null) return false
   const candidate = frame as Record<string, unknown>
@@ -43,7 +46,7 @@ export function normalize(frame: unknown): IncomingMessage | null {
   if (dataMessage === undefined || typeof dataMessage.message !== 'string') return null
 
   const groupInfo = dataMessage.groupInfo
-  const conversationId = groupInfo === undefined ? envelope.sourceUuid : `group:${groupInfo.groupId}`
+  const conversationId = groupInfo === undefined ? envelope.sourceUuid : `${GROUP_PREFIX}${groupInfo.groupId}`
 
   return {
     channel: 'signal',

@@ -237,6 +237,35 @@ describe('the signal hypha lifecycle', () => {
     expect(manifest.capabilities).toEqual(['group_membership'])
   })
 
+  it('routes a reply back to the conversation normalize() produced, group and dm alike', async () => {
+    const socketPath = tmpSocketPath()
+    const daemon = startFakeDaemon(socketPath, (request) => {
+      if (respondToVersion(request, daemon)) return
+      if (request.method === 'send') daemon.respond(request.id, { timestamp: 1, results: [] })
+    })
+    const { instance } = await connected(daemon, socketPath)
+
+    // The round trip, not the two halves separately: normalize() writes the conversation id and
+    // send() reads it, so a prefix changed in one place alone must be caught here.
+    const group = frame('inbound-group') as { params: { envelope: { dataMessage: { groupInfo: { groupId: string } } } } }
+    const groupId = group.params.envelope.dataMessage.groupInfo.groupId
+    await instance.send(normalize(group)?.conversationId ?? '', { text: 'to the group' })
+
+    const dm = frame('inbound-dm') as { params: { envelope: { sourceUuid: string } } }
+    await instance.send(normalize(dm)?.conversationId ?? '', { text: 'to the person' })
+
+    const sends = daemon.requests.filter((r) => r.method === 'send')
+    expect(sends[0]?.params).toEqual({ account: '+33700000000', message: 'to the group', groupId })
+    expect(sends[1]?.params).toEqual({
+      account: '+33700000000',
+      message: 'to the person',
+      recipient: [dm.params.envelope.sourceUuid],
+    })
+
+    await instance.stop()
+    daemon.stop()
+  })
+
   it('refuses an attachment or a reaction rather than silently dropping the reply', async () => {
     const socketPath = tmpSocketPath()
     const daemon = startFakeDaemon(socketPath, (request) => respondToVersion(request, daemon))
