@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'bun:test'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { parse as parseYaml } from 'yaml'
+import { enzymeChecks } from '@mycelo/septum/conformance'
 import module from '../src/index.js'
-import type { EnzymeContext, Invocation } from '@mycelo/septum'
+import type { EnzymeContext, EnzymeModule, Invocation } from '@mycelo/septum'
+
+const here = join(import.meta.dirname, '..')
 
 const services = [
   { label: 'radarr', url: 'https://radarr.example', note: 'films' },
@@ -73,5 +79,26 @@ describe('the links spore', () => {
     // defect phase 5.5's mutation campaign found six times.
     expect(text).toContain('radarr')
     expect(text).toContain('jellyfin')
+  })
+
+  it('conforms, with its own catalogues', async () => {
+    const manifest: unknown = parseYaml(readFileSync(join(here, 'spore.yaml'), 'utf8'))
+    const failures = await enzymeChecks({
+      name: 'links',
+      // EnzymeHarness wants EnzymeModule<unknown>; handlers is a function-typed property,
+      // so TS checks it contravariantly and Config does not narrow to unknown on its own.
+      module: module as EnzymeModule<unknown>,
+      manifest,
+      context: () => stub({ services }).ctx,
+      // label empty and url malformed: exercises the array-index issue paths the
+      // project's settings validator has never seen (design §9).
+      validConfig: { services },
+      invalidConfig: { services: [{ label: '', url: 'not-a-url' }] },
+      catalogs: {
+        en: parseYaml(readFileSync(join(here, 'translations', 'en.yaml'), 'utf8')),
+        fr: parseYaml(readFileSync(join(here, 'translations', 'fr.yaml'), 'utf8')),
+      },
+    })
+    expect(failures).toEqual([])
   })
 })
