@@ -1,0 +1,11 @@
+{
+  "name": "@mycelo/spore-signal",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "@mycelo/septum": "^0.8.0",
+    "zod": "^4.4.3"
+  }
+}

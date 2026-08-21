@@ -1,0 +1,93 @@
+# signal
+
+A `hypha` spore for [Mycelo](https://github.com/Navino16/mycelo). A channel over
+[`signal-cli`](https://github.com/AsamK/signal-cli)'s JSON-RPC daemon, which **the operator runs
+themselves**. This spore does not spawn, supervise, or bundle `signal-cli` — it only dials the
+socket. Nothing in a manifest lets a spore declare that it needs an external service (`externals:`
+is for native npm dependencies, not this), so the requirement lives here.
+
+## Before installing this spore
+
+1. **Register or link the bot's Signal number first**, outside Mycelo entirely. This spore never
+   does device linking or registration; by the time you configure it, `signal-cli` must already
+   have a working account.
+2. **Run the daemon yourself**, long-lived, for example:
+
+   ```sh
+   docker run --rm --name mycelo-signald --user "$(id -u):$(id -g)" \
+     -v "$HOME/.local/share/signal-cli:/data" \
+     registry.gitlab.com/packaging/signal-cli/signal-cli-native:latest \
+     -a +33700000000 daemon --socket /data/socket --receive-mode on-start
+   ```
+
+   `--user` matters: the published image runs as uid 101, and a host-owned mount without it fails
+   every write with `Permission denied`. Running as your own user also makes the socket ordinarily
+   readable by the Bun process that hosts Mycelo.
+
+3. **Point Mycelo at the socket path that command produces** — in the example above,
+   `$HOME/.local/share/signal-cli/socket`.
+
+## `--receive-mode`, and why it is not this spore's choice
+
+`signal-cli daemon` accepts `on-start`, `on-connection`, or `manual`. This spore assumes
+**`on-start`**: it expects inbound notifications to already be flowing on the socket it connects
+to, and it does not send anything to change that. Running the daemon with `manual` means Mycelo
+never sees a message; that is an operator choice this spore has no way to detect or correct.
+
+Signal's own protocol expects a linked device to receive regularly — a daemon that sits idle for
+long periods is a state Signal treats as abnormal. Run it long-lived with `on-start`, not on
+demand.
+
+## Configuration
+
+```ts
+z.object({
+  socket: z.string().min(1),
+  account: z.string().min(1),
+})
+```
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `socket` | string | yes | Path to the `signal-cli` daemon's unix socket |
+| `account` | string | yes | The bot's own number, in E.164 — the one place a real phone number belongs |
+
+Both are required, so the spore is **disabled until configured**. No format is enforced on either
+value beyond non-emptiness: `signal-cli`'s own error is more useful than a validator that is
+stricter than the service it configures.
+
+## `connect()` fails loudly, naming the socket
+
+There is no JSON-RPC handshake on connect — `signal-cli` sends nothing at all. A successful socket
+connection is therefore not proof the daemon is alive; `connect()` makes one free, side-effect-free
+`version` request and rejects, **naming the socket path**, if nothing answers. That message is the
+only thing standing between "the daemon isn't running" and a silent, permanently dormant plugin.
+
+## Identity: UUIDs, not phone numbers
+
+Inbound messages and group membership both identify a person by their Signal UUID, never by phone
+number — a message's `sender.externalId` and a group member's UUID are the *same string*, which is
+what lets `group-gate` compare them. An operator reading `channel_identity` for this channel will
+see UUIDs, not the numbers they think in; the sender's profile name (not under their control by
+anyone but them) surfaces separately as `displayName`.
+
+## Group membership can be stale, and self-corrects on the next miss
+
+A linked device does not learn about a new group, or about someone added to one, by itself —
+`signal-cli` only picks that up after an explicit sync with the primary device. `listGroupMembers`
+calls `sendSyncRequest` and retries once whenever the group is not found on the first attempt, so a
+miss caused by staleness corrects itself the next time anyone asks. If a group membership change
+still is not visible, check whether `signal-cli` itself has learned it before suspecting Mycelo.
+
+## Not implemented
+
+Attachments and reactions are declared capabilities — the channel has them — but nothing in this
+phase sends or receives either, and neither was exercised against the real daemon. Reconnection
+after the daemon disappears is not attempted: `send()` refuses once the socket has closed rather
+than silently dropping a reply, but recovering the connection is left to the operator restarting
+the plugin (or Mycelo).
+
+## Compatibility
+
+Needs `@mycelo/septum@^0.8.0` and a Mycelo core at phase 7 or later. Measured against
+`signal-cli 0.14.7+morph027+1`.
