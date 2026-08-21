@@ -95,12 +95,20 @@ still is not visible, check whether `signal-cli` itself has learned it before su
 
 ## Not implemented
 
-Attachments and reactions are declared capabilities — the channel has them — but nothing in this
-phase sends or receives either, and neither was exercised against the real daemon. `send()`
-**throws** rather than silently dropping a reply that carries one, so a command declaring either
-capability fails loudly on this channel instead of losing its reply with no trace. Reconnection
-after the daemon disappears is not attempted either: `send()` refuses once the socket has closed,
-but recovering the connection is left to the operator restarting the plugin (or Mycelo).
+Signal itself has attachments and reactions; this spore does not, and so it does **not declare
+them**. The manifest lists `group_membership` only. The core derives a channel's capabilities from
+the manifest, so declaring one that `send()` cannot serve would make Mycelo accept a command
+requiring it and fail at the last moment with a generic error, and would make
+`ctx.capabilities.has('reactions')` answer `true` on a channel that has none. Both are declared
+here the day they are implemented, not before.
+
+`send()` still **throws** on a reply carrying an attachment or a reaction, as defence in depth:
+with the capability undeclared the core refuses such a command first, but a reply reaching this
+spore anyway must fail loudly rather than vanish.
+
+Reconnection after the daemon disappears is not attempted either: `send()` refuses once the socket
+has closed, but recovering the connection is left to the operator restarting the plugin (or
+Mycelo).
 
 ## Compatibility
 

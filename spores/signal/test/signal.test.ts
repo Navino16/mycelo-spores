@@ -230,13 +230,20 @@ describe('the signal hypha lifecycle', () => {
     daemon.stop()
   })
 
+  it('declares no capability send() cannot serve', () => {
+    const manifest = parseYaml(readFileSync(join(here, 'spore.yaml'), 'utf8')) as { capabilities: string[] }
+    // The core derives ctx.capabilities and the dispatch gate from the manifest, so declaring
+    // attachments or reactions here would accept a command this send() then refuses.
+    expect(manifest.capabilities).toEqual(['group_membership'])
+  })
+
   it('refuses an attachment or a reaction rather than silently dropping the reply', async () => {
     const socketPath = tmpSocketPath()
     const daemon = startFakeDaemon(socketPath, (request) => respondToVersion(request, daemon))
     const { instance } = await connected(daemon, socketPath)
 
-    // Both capabilities are declared in spore.yaml but unimplemented (findings: not measured).
-    // Silence here would be the exact silent-reply-loss class this project keeps paying for.
+    // Defence in depth: undeclared, so the core refuses first, but a reply arriving anyway
+    // must fail loudly rather than vanish.
     expect(instance.send(SENDER_UUID, { reactTo: { messageId: 'm:1', emoji: '👍' } })).rejects.toThrow(
       /not implemented/,
     )
