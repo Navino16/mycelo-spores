@@ -1,0 +1,14 @@
+reply:
+  header: "services:"
+  line: "{label} — {url}"
+  noted: "{label} — {url} ({note})"
+  empty: "no services are configured yet"
+  unknown: "no service called ''{label}''. Try one of: {known}"
+command:
+  links:
+    description: "List every configured service"
+  link:
+    description: "Show one service by label"
+arg:
+  label:
+    description: "The label of the service to show"

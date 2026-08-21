@@ -1,0 +1,14 @@
+reply:
+  header: "services :"
+  line: "{label} — {url}"
+  noted: "{label} — {url} ({note})"
+  empty: "aucun service n'est encore configuré"
+  unknown: "aucun service nommé ''{label}''. Essayez parmi : {known}"
+command:
+  links:
+    description: "Lister tous les services configurés"
+  link:
+    description: "Afficher un service par son libellé"
+arg:
+  label:
+    description: "Le libellé du service à afficher"
