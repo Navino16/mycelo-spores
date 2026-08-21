@@ -37,11 +37,11 @@ installed today by pointing `mycelo.yaml`'s `spores:` at a directory holding it.
 and `signal` both have required settings with no defaults, and on a fresh installation the first
 synchronisation *enables* every spore it finds. `group-gate` is `enforcing`, so an unconfigured one
 is dormant, and a dormant enforcing inhibitor refuses **every message on every channel** —
-recoverable only through the HTTP API. That is the correct behaviour for a security gate and a poor
-first five minutes.
+recoverable through the HTTP API's plugin routes or directly against the database, never from a
+channel. That is the correct behaviour for a security gate and a poor first five minutes.
 
 Either install only the spores you have configured, or follow
-[`group-gate`'s own instructions](spores/group-gate#an-unconfigured-or-misconfigured-group-gate-refuses-all-traffic-on-every-channel)
+[`group-gate`'s own instructions](spores/group-gate/README.md#an-unconfigured-or-misconfigured-group-gate-refuses-all-traffic-on-every-channel)
 and configure both before the boot that germinates them.
 
 Contributing guidelines and the plugin authoring guide will land with the core's

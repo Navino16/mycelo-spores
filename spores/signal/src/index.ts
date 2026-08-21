@@ -78,7 +78,7 @@ export default {
         // findings: not measured. Silently dropping either would be the exact
         // silent-reply-loss class this project keeps paying for.
         if (out.reactTo !== undefined || (out.attachments?.length ?? 0) > 0) {
-          throw new Error('signal: attachments and reactions are declared but not implemented yet')
+          throw new Error('signal: attachments and reactions are not implemented')
         }
         // The core's "at least one field" invariant is cleared by attachments: [], which then
         // leaves nothing to send. Returning silently would lose the reply with no trace.

@@ -26,7 +26,9 @@ recorded **disabled** and nothing is silenced until you enable it.
 So configure it **before** the boot that first germinates it:
 
 1. Boot Mycelo at least once **without** this spore in any directory `mycelo.yaml`'s `spores:`
-   names. On a fresh installation that is what stops the next step from enabling it on sight.
+   names, and **with at least one other spore present**. The install table is what makes the next
+   boot no longer a first run, and a boot that discovers nothing writes no rows — so a boot with an
+   empty `spores:` leaves the next one still enabling everything it finds, this spore included.
 2. Add the spore and restart. It is discovered, recorded **disabled**, and refuses nothing.
 3. `PUT /api/plugins/group-gate/settings` with a valid `channel` and `groupId` (below), then
    `POST /api/plugins/group-gate/enable`. Enabling is refused while the settings are incomplete,
@@ -50,7 +52,7 @@ That command comes from whichever enzyme in your installation holds the `restric
 scope; there is no HTTP route for it yet. **Set it while the bot still answers** — once the gate is
 dormant, admission refuses the very command that would confine it.
 
-Confinement does not replace step 2 above: an unconfigured gate confined to `signal` still refuses
+Confinement does not replace step 3 above: an unconfigured gate confined to `signal` still refuses
 every Signal message. It bounds the blast radius, it does not remove it.
 
 ## Configuration
