@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { inhibitorChecks } from '@mycelo/septum/conformance'
 import module from '../src/index.js'
-import type { InhibitorContext, IncomingMessage } from '@mycelo/septum'
+import type { InhibitorContext, IncomingMessage, Logger } from '@mycelo/septum'
 
 const here = join(import.meta.dirname, '..')
 
@@ -21,15 +21,31 @@ const message = (channel: string, externalId: string) => ({
   receivedAt: new Date(),
 }) as unknown as IncomingMessage
 
-function stub(members: { channel: string, externalId: string }[] | null) {
+type Members = { channel: string, externalId: string }[] | null
+
+function capturingLogger(): { logger: Logger, warnings: string[] } {
+  const warnings: string[] = []
+  const logger: Logger = {
+    debug: () => undefined,
+    info: () => undefined,
+    warn: (message) => { warnings.push(message) },
+    error: () => undefined,
+    child: () => logger,
+  }
+  return { logger, warnings }
+}
+
+function stub(members: Members, groupMembers: () => unknown = () => Promise.resolve(members)) {
   const required: { channel: string, capability: string }[] = []
+  const { logger, warnings } = capturingLogger()
   const ctx = {
     config,
+    logger,
     requireCapability: (channel: string, capability: string) => { required.push({ channel, capability }) },
-    groupMembers: async () => members,
+    groupMembers,
     t: (key: string) => key,
   }
-  return { ctx: ctx as unknown as InhibitorContext<typeof config>, required }
+  return { ctx: ctx as unknown as InhibitorContext<typeof config>, required, warnings }
 }
 
 describe('the group-gate spore', () => {
@@ -69,6 +85,25 @@ describe('the group-gate spore', () => {
     // would make the gate silently inert, which design §8 forbids.
     expect(verdict.allow).toBe(false)
     expect(verdict.reason).toBe('reason.unavailable')
+  })
+
+  it('refuses, rather than throwing, when groupMembers rejects', async () => {
+    const { ctx, warnings } = stub(null, () => Promise.reject(new Error('daemon is gone')))
+    const inhibitor = module.create()
+    await inhibitor.start(ctx)
+    const verdict = await inhibitor.inspect(message('signal', '+3361'), ctx)
+    // A throw out of inspect() makes the core refuse every message on EVERY channel for an
+    // enforcing inhibitor (admission/chain.ts). A verdict confines it to the guarded channel.
+    expect(verdict).toEqual({ allow: false, reason: 'reason.unavailable' })
+    expect(warnings.some((w) => w.includes('group membership'))).toBe(true)
+  })
+
+  it('refuses, rather than throwing, when groupMembers throws synchronously', async () => {
+    const { ctx } = stub(null, () => { throw new Error('no such channel') })
+    const inhibitor = module.create()
+    await inhibitor.start(ctx)
+    const verdict = await inhibitor.inspect(message('signal', '+3361'), ctx)
+    expect(verdict).toEqual({ allow: false, reason: 'reason.unavailable' })
   })
 
   it('leaves another channel alone', async () => {
