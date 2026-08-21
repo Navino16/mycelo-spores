@@ -5,7 +5,7 @@ configured group on a configured channel, resolved through `ctx.groupMembers()` 
 membership lives in the channel itself (a real Signal group, for instance), and Mycelo reads it
 rather than duplicating an allowlist.
 
-## A misconfigured `group-gate` refuses ALL traffic on EVERY channel
+## An unconfigured or misconfigured `group-gate` refuses ALL traffic on EVERY channel
 
 This spore declares `enforcing: true`. A **dormant** `enforcing` inhibitor refuses every message
 on every channel, whatever made it dormant — a typo in `channel` or `groupId`, a channel that
@@ -14,7 +14,44 @@ is never silently inert"), and it is also a real foot-gun: **admission runs befo
 can reach the bot**, so no `/plugin-disable` or config command can undo it. Recovery is through
 the HTTP API's plugin routes or directly against the database — not from any channel.
 
-Read this before configuring `group-gate` in production, not after locking yourself out.
+**`channel` and `groupId` are both required and neither has a default, so a `group-gate` that has
+never been configured is dormant — which means installing it and booting silences the whole bot.**
+A default would be worse: a made-up group id is a gate that admits nobody while looking configured.
+
+When the bot goes quiet depends on whether Mycelo has booted before. On a **fresh** installation
+the first synchronisation **enables** every spore it finds, so the very first boot is already the
+one that silences everything. On an installation that has booted before, a newly found spore is
+recorded **disabled** and nothing is silenced until you enable it.
+
+So configure it **before** the boot that first germinates it:
+
+1. Boot Mycelo at least once **without** this spore in any directory `mycelo.yaml`'s `spores:`
+   names. On a fresh installation that is what stops the next step from enabling it on sight.
+2. Add the spore and restart. It is discovered, recorded **disabled**, and refuses nothing.
+3. `PUT /api/plugins/group-gate/settings` with a valid `channel` and `groupId` (below), then
+   `POST /api/plugins/group-gate/enable`. Enabling is refused while the settings are incomplete,
+   which is the check that keeps a dormant gate off your channels.
+4. Restart Mycelo. The gate now germinates and only the configured channel is filtered.
+
+If the bot is already silent because a fresh installation enabled the spore on sight,
+`POST /api/plugins/group-gate/disable` and restart, then resume at step 3. The HTTP API is
+unaffected by admission, so it still answers while every channel is refusing.
+
+## Confine the gate to the channel it guards
+
+The core can restrict an inhibitor to named channels, and a confined inhibitor that breaks refuses
+only on those channels — the rest of the bot keeps answering. For a gate on `signal`:
+
+```
+/inhibitor-channels group-gate signal
+```
+
+That command comes from whichever enzyme in your installation holds the `restrictions.manage`
+scope; there is no HTTP route for it yet. **Set it while the bot still answers** — once the gate is
+dormant, admission refuses the very command that would confine it.
+
+Confinement does not replace step 2 above: an unconfigured gate confined to `signal` still refuses
+every Signal message. It bounds the blast radius, it does not remove it.
 
 ## Configuration
 
@@ -27,13 +64,22 @@ z.object({
 
 | Key | Type | Required | Meaning |
 |---|---|---|---|
-| `channel` | string | yes | The hypha this gate confines |
+| `channel` | string | yes | The hypha this gate confines, by its spore name |
 | `groupId` | string | yes | The group whose members are admitted, in that channel's own id format |
+
+`groupId` is **the channel's own identifier, not a name you choose**. A wrong value fails closed
+and silently: the group is simply never found, membership comes back empty, and every sender is
+refused as a non-member. There is no diagnostic for a typo here, so copy the value rather than
+typing it.
+
+For the `signal` spore it is the daemon's **base64 group id** — the `id` field of `signal-cli`'s
+own `listGroups`, byte-identical to the `groupInfo.groupId` carried by any inbound group message.
+It is **not** the `group:`-prefixed conversation id that `signal` uses elsewhere: drop the prefix.
 
 Worked example, as written through `PUT /api/plugins/group-gate/settings`:
 
 ```json
-{ "channel": "signal", "groupId": "g:house" }
+{ "channel": "signal", "groupId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" }
 ```
 
 ## Behaviour
@@ -45,6 +91,9 @@ Worked example, as written through `PUT /api/plugins/group-gate/settings`:
   and admits only a sender found in that list.
 - A `null` answer from `groupMembers` means the channel cannot report membership right now — that
   is a refusal, not an admission. The gate fails closed.
+- A `groupMembers` that rejects, or throws, is the same refusal. Letting it propagate would make
+  the core refuse every message on every channel, which is the one outcome confinement exists to
+  prevent.
 
 ## Requires
 
