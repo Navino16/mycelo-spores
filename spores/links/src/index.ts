@@ -2,10 +2,9 @@ import { defineConfig } from '@mycelo/septum'
 import type { EnzymeModule } from '@mycelo/septum'
 import { z } from 'zod'
 
-// No `.min(1)`: germinate.ts parses stored settings with no rows present as `{}`, and a
-// required array with no default would leave a fresh install dormant before an operator
-// ever gets the chance to configure it (design §9.1). `.default([])` keeps it germinated
-// and reachable, which is what makes the `services.length === 0` branch below real.
+// No `.min(1)`: a required array with no default leaves a fresh install dormant before an
+// operator can configure it (design §9.1) — `.default([])` keeps it germinated and makes
+// the empty-case branch below reachable.
 const schema = z.object({
   services: z.array(z.object({
     label: z.string().min(1),
@@ -32,7 +31,11 @@ export default {
         await ctx.reply({ text: [ctx.t('reply.header'), ...lines].join('\n') })
       },
       handleLink: async (invocation, ctx) => {
-        const label = String(invocation.args.label)
+        const label = invocation.args.label
+        if (typeof label !== 'string' || label.length === 0) {
+          await ctx.reply({ text: ctx.t('reply.usage') })
+          return
+        }
         const found = ctx.config.services.find((s) => s.label === label)
         if (found === undefined) {
           const known = ctx.config.services.map((s) => s.label).join(', ')

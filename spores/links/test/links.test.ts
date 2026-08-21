@@ -52,6 +52,18 @@ describe('the links spore', () => {
     expect(sent[0]?.text).not.toContain('radarr')
   })
 
+  it('answers with usage when the label arg is missing entirely', async () => {
+    const { ctx, sent } = stub({ services })
+    await module.create().handlers.handleLink(call('link'), ctx)
+    expect(sent[0]?.text).toBe('reply.usage({})')
+  })
+
+  it('answers with usage when the label arg is an empty string', async () => {
+    const { ctx, sent } = stub({ services })
+    await module.create().handlers.handleLink(call('link', { label: '' }), ctx)
+    expect(sent[0]?.text).toBe('reply.usage({})')
+  })
+
   it('refuses an unknown label by naming every label that exists', async () => {
     const { ctx, sent } = stub({ services })
     await module.create().handlers.handleLink(call('link', { label: 'plex' }), ctx)

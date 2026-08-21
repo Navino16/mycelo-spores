@@ -4,6 +4,7 @@ reply:
   noted: "{label} — {url} ({note})"
   empty: "no services are configured yet"
   unknown: "no service called ''{label}''. Try one of: {known}"
+  usage: "usage: /link '<label>' — the label of a configured service"
 command:
   links:
     description: "List every configured service"
