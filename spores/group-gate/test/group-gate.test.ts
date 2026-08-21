@@ -1,0 +1,165 @@
+import { describe, expect, it } from 'bun:test'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { parse as parseYaml } from 'yaml'
+import { inhibitorChecks } from '@mycelo/septum/conformance'
+import module from '../src/index.js'
+import type { InhibitorContext, IncomingMessage, Logger } from '@mycelo/septum'
+
+const here = join(import.meta.dirname, '..')
+
+/** Flattens the shipped catalogue to the dotted keys the core resolves. */
+function catalogueKeys(file: string): Set<string> {
+  const keys = new Set<string>()
+  const walk = (node: unknown, prefix: string): void => {
+    if (typeof node === 'string') { keys.add(prefix); return }
+    if (typeof node !== 'object' || node === null) return
+    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      walk(v, prefix === '' ? k : `${prefix}.${k}`)
+    }
+  }
+  walk(parseYaml(readFileSync(join(here, 'translations', file), 'utf8')), '')
+  return keys
+}
+
+const KEYS = catalogueKeys('en.yaml')
+
+/**
+ * Throws on a key the shipped catalogue does not carry. Without it, renaming a key in every
+ * catalogue leaves the suite green while the bot answers the literal key to a real user.
+ */
+function known(key: string): string {
+  if (!KEYS.has(key)) throw new Error(`no such key in translations/en.yaml: ${key}`)
+  return key
+}
+
+// A signal group id is the daemon's own base64 string, not a name an operator invents.
+const config = { channel: 'signal', groupId: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' }
+
+const message = (channel: string, externalId: string) => ({
+  channel,
+  conversationId: 'c:1',
+  messageId: 'm:1',
+  sender: { channel, externalId },
+  text: '/help',
+  attachments: [],
+  raw: null,
+  receivedAt: new Date(),
+}) as unknown as IncomingMessage
+
+type Members = { channel: string, externalId: string }[] | null
+
+function capturingLogger(): { logger: Logger, warnings: string[] } {
+  const warnings: string[] = []
+  const logger: Logger = {
+    debug: () => undefined,
+    info: () => undefined,
+    warn: (message) => { warnings.push(message) },
+    error: () => undefined,
+    child: () => logger,
+  }
+  return { logger, warnings }
+}
+
+function stub(members: Members, groupMembers: () => unknown = () => Promise.resolve(members)) {
+  const required: { channel: string, capability: string }[] = []
+  const { logger, warnings } = capturingLogger()
+  const ctx = {
+    config,
+    logger,
+    requireCapability: (channel: string, capability: string) => { required.push({ channel, capability }) },
+    groupMembers,
+    t: (key: string) => known(key),
+  }
+  return { ctx: ctx as unknown as InhibitorContext<typeof config>, required, warnings }
+}
+
+describe('the group-gate spore', () => {
+  it('demands group_membership of the configured channel at start', async () => {
+    const { ctx, required } = stub([])
+    const inhibitor = module.create()
+    await inhibitor.start(ctx)
+    // Kills the mutant that drops requireCapability: without it a gate whose channel cannot
+    // report members admits everyone silently.
+    expect(required).toEqual([{ channel: 'signal', capability: 'group_membership' }])
+  })
+
+  it('admits a member', async () => {
+    const { ctx } = stub([{ channel: 'signal', externalId: '+3361' }, { channel: 'signal', externalId: '+3362' }])
+    const inhibitor = module.create()
+    await inhibitor.start(ctx)
+    // The plural case: two members, and the one asked about is NOT the last, so a mutant
+    // comparing against only the final entry dies.
+    expect(await inhibitor.inspect(message('signal', '+3361'), ctx)).toEqual({ allow: true })
+  })
+
+  it('refuses a non-member with a reason', async () => {
+    const { ctx } = stub([{ channel: 'signal', externalId: '+3361' }])
+    const inhibitor = module.create()
+    await inhibitor.start(ctx)
+    const verdict = await inhibitor.inspect(message('signal', '+3399'), ctx)
+    expect(verdict.allow).toBe(false)
+    expect(verdict.reason).toBe('reason.not-member')
+  })
+
+  it('refuses when membership is unavailable, rather than admitting', async () => {
+    const { ctx } = stub(null)
+    const inhibitor = module.create()
+    await inhibitor.start(ctx)
+    const verdict = await inhibitor.inspect(message('signal', '+3361'), ctx)
+    // Fail closed. A null answer means the channel cannot report members; admitting here
+    // would make the gate silently inert, which design §8 forbids.
+    expect(verdict.allow).toBe(false)
+    expect(verdict.reason).toBe('reason.unavailable')
+  })
+
+  it('refuses, rather than throwing, when groupMembers rejects', async () => {
+    const { ctx, warnings } = stub(null, () => Promise.reject(new Error('daemon is gone')))
+    const inhibitor = module.create()
+    await inhibitor.start(ctx)
+    const verdict = await inhibitor.inspect(message('signal', '+3361'), ctx)
+    // A throw out of inspect() makes the core refuse every message on EVERY channel for an
+    // enforcing inhibitor (admission/chain.ts). A verdict confines it to the guarded channel.
+    expect(verdict).toEqual({ allow: false, reason: 'reason.unavailable' })
+    expect(warnings.some((w) => w.includes('group membership'))).toBe(true)
+  })
+
+  it('refuses, rather than throwing, when groupMembers throws synchronously', async () => {
+    const { ctx } = stub(null, () => { throw new Error('no such channel') })
+    const inhibitor = module.create()
+    await inhibitor.start(ctx)
+    const verdict = await inhibitor.inspect(message('signal', '+3361'), ctx)
+    expect(verdict).toEqual({ allow: false, reason: 'reason.unavailable' })
+  })
+
+  it('leaves another channel alone', async () => {
+    const { ctx } = stub([])
+    const inhibitor = module.create()
+    await inhibitor.start(ctx)
+    expect(await inhibitor.inspect(message('console', 'local'), ctx)).toEqual({ allow: true })
+  })
+
+  it('refuses everything before start', async () => {
+    const { ctx } = stub([{ channel: 'signal', externalId: '+3361' }])
+    const inhibitor = module.create()
+    const verdict = await inhibitor.inspect(message('signal', '+3361'), ctx)
+    expect(verdict.allow).toBe(false)
+    expect(verdict.reason).toBe('reason.unstarted')
+  })
+
+  it('conforms, with its own catalogues', async () => {
+    const manifest: unknown = parseYaml(readFileSync(join(here, 'spore.yaml'), 'utf8'))
+    const { ctx } = stub([{ channel: 'signal', externalId: '+3361' }])
+    const failures = await inhibitorChecks({
+      name: 'group-gate',
+      manifest,
+      module,
+      validConfig: config,
+      invalidConfig: { channel: 'signal' },
+      context: () => ctx,
+      allowed: [message('signal', '+3361')],
+      denied: [message('signal', '+3399')],
+    })
+    expect(failures).toEqual([])
+  })
+})

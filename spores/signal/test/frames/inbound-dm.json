@@ -1,0 +1,24 @@
+{
+ "jsonrpc": "2.0",
+ "method": "receive",
+ "params": {
+  "envelope": {
+   "source": "00000000-0000-4000-8000-000000000001",
+   "sourceNumber": null,
+   "sourceUuid": "00000000-0000-4000-8000-000000000001",
+   "sourceName": "Test Sender",
+   "sourceDevice": 1,
+   "timestamp": 1787305270137,
+   "serverReceivedTimestamp": 1787305270545,
+   "serverDeliveredTimestamp": 1787305270634,
+   "dataMessage": {
+    "timestamp": 1787305270137,
+    "message": "spike dm",
+    "expiresInSeconds": 0,
+    "isExpirationUpdate": false,
+    "viewOnce": false
+   }
+  },
+  "account": "+33700000000"
+ }
+}

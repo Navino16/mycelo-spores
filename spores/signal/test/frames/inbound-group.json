@@ -1,0 +1,30 @@
+{
+ "jsonrpc": "2.0",
+ "method": "receive",
+ "params": {
+  "envelope": {
+   "source": "00000000-0000-4000-8000-000000000001",
+   "sourceNumber": null,
+   "sourceUuid": "00000000-0000-4000-8000-000000000001",
+   "sourceName": "Test Sender",
+   "sourceDevice": 1,
+   "timestamp": 1787305237314,
+   "serverReceivedTimestamp": 1787305237883,
+   "serverDeliveredTimestamp": 1787305237906,
+   "dataMessage": {
+    "timestamp": 1787305237314,
+    "message": "spike dm",
+    "expiresInSeconds": 0,
+    "isExpirationUpdate": false,
+    "viewOnce": false,
+    "groupInfo": {
+     "groupId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+     "groupName": "Test Group",
+     "revision": 13,
+     "type": "DELIVER"
+    }
+   }
+  },
+  "account": "+33700000000"
+ }
+}

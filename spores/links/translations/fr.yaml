@@ -1,0 +1,15 @@
+reply:
+  list: "services :\n{lines}"
+  line: "{label} — {url}"
+  noted: "{label} — {url} ({note})"
+  empty: "aucun service n'est encore configuré"
+  unknown: "aucun service nommé ''{label}''. Essayez parmi : {known}"
+  usage: "usage : /link '<label>' — le libellé d'un service configuré"
+command:
+  links:
+    description: "Lister tous les services configurés"
+  link:
+    description: "Afficher un service par son libellé"
+arg:
+  label:
+    description: "Le libellé du service à afficher"

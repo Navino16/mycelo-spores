@@ -1,0 +1,15 @@
+kind: enzyme
+name: links
+septum: "^0.8"
+description: Answers with the house's own service URLs, which the operator configures.
+commands:
+  - name: links
+    description: command.links.description
+    code: handleLinks
+  - name: link
+    description: command.link.description
+    code: handleLink
+    args:
+      - name: label
+        description: arg.label.description
+        required: true
