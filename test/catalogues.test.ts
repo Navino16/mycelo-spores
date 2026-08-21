@@ -124,11 +124,32 @@ describe('the fixture catalogues', () => {
   })
 })
 
+/**
+ * Spores with no user-visible text of their own. Everything else must ship `en`, the bottom of
+ * every cascade — without this list the walk below silently covers nothing when a catalogue
+ * directory is deleted.
+ */
+const WITHOUT_CATALOGUE = new Set(['signal'])
+
+const sporeNames = (): string[] =>
+  readdirSync(SPORES, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
+
 describe('every spore catalogue', () => {
   const catalogues = everyCatalogue()
 
-  // No count guard: zero is a correct answer before any spore ships translations. This scan
-  // covers whatever `spores/*/translations/` holds, with no edit needed as spores are added.
+  it('exists: every spore ships translations/en.yaml, or is a named exception', () => {
+    const missing = sporeNames().filter(
+      (name) => !WITHOUT_CATALOGUE.has(name) && !existsSync(join(SPORES, name, 'translations', 'en.yaml')),
+    )
+    expect(missing).toEqual([])
+  })
+
+  it('names no stale exception', () => {
+    for (const name of WITHOUT_CATALOGUE) {
+      expect(existsSync(join(SPORES, name)), `${name} is exempted but is not a spore`).toBe(true)
+      expect(existsSync(join(SPORES, name, 'translations')), `${name} is exempted but ships translations`).toBe(false)
+    }
+  })
 
   it('carries the same key set in every locale a spore ships', () => {
     assertSameKeySet(catalogues)

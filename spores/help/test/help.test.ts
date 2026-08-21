@@ -8,6 +8,31 @@ import module from '../src/index.js'
 
 const here = join(import.meta.dirname, '..')
 
+/** Flattens the shipped catalogue to the dotted keys the core resolves. */
+function catalogueKeys(file: string): Set<string> {
+  const keys = new Set<string>()
+  const walk = (node: unknown, prefix: string): void => {
+    if (typeof node === 'string') { keys.add(prefix); return }
+    if (typeof node !== 'object' || node === null) return
+    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      walk(v, prefix === '' ? k : `${prefix}.${k}`)
+    }
+  }
+  walk(parseYaml(readFileSync(join(here, 'translations', file), 'utf8')), '')
+  return keys
+}
+
+const KEYS = catalogueKeys('en.yaml')
+
+/**
+ * Throws on a key the shipped catalogue does not carry. Without it, renaming a key in every
+ * catalogue leaves the suite green while the bot answers the literal key to a real user.
+ */
+function known(key: string): string {
+  if (!KEYS.has(key)) throw new Error(`no such key in translations/en.yaml: ${key}`)
+  return key
+}
+
 function stubContext(locale: string, commands: readonly CommandInfo[]) {
   const sent: { text?: string }[] = []
   const asked: { locale: string }[] = []
@@ -15,7 +40,7 @@ function stubContext(locale: string, commands: readonly CommandInfo[]) {
     locale,
     principal: { id: 7, channel: 'signal', externalId: '+3360', roles: ['owner'] },
     t: (key: string, params: Record<string, unknown> = {}) =>
-      key === 'reply.line' ? `${String(params.name)}=${String(params.description)}`
+      known(key) === 'reply.line' ? `${String(params.name)}=${String(params.description)}`
         : key === 'reply.list' ? `list[${String(params.lines)}]`
           : key,
     reply: async (content: { text?: string }) => { sent.push(content) },

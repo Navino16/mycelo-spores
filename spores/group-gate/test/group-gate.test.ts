@@ -8,7 +8,33 @@ import type { InhibitorContext, IncomingMessage, Logger } from '@mycelo/septum'
 
 const here = join(import.meta.dirname, '..')
 
-const config = { channel: 'signal', groupId: 'g:house' }
+/** Flattens the shipped catalogue to the dotted keys the core resolves. */
+function catalogueKeys(file: string): Set<string> {
+  const keys = new Set<string>()
+  const walk = (node: unknown, prefix: string): void => {
+    if (typeof node === 'string') { keys.add(prefix); return }
+    if (typeof node !== 'object' || node === null) return
+    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      walk(v, prefix === '' ? k : `${prefix}.${k}`)
+    }
+  }
+  walk(parseYaml(readFileSync(join(here, 'translations', file), 'utf8')), '')
+  return keys
+}
+
+const KEYS = catalogueKeys('en.yaml')
+
+/**
+ * Throws on a key the shipped catalogue does not carry. Without it, renaming a key in every
+ * catalogue leaves the suite green while the bot answers the literal key to a real user.
+ */
+function known(key: string): string {
+  if (!KEYS.has(key)) throw new Error(`no such key in translations/en.yaml: ${key}`)
+  return key
+}
+
+// A signal group id is the daemon's own base64 string, not a name an operator invents.
+const config = { channel: 'signal', groupId: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' }
 
 const message = (channel: string, externalId: string) => ({
   channel,
@@ -43,7 +69,7 @@ function stub(members: Members, groupMembers: () => unknown = () => Promise.reso
     logger,
     requireCapability: (channel: string, capability: string) => { required.push({ channel, capability }) },
     groupMembers,
-    t: (key: string) => key,
+    t: (key: string) => known(key),
   }
   return { ctx: ctx as unknown as InhibitorContext<typeof config>, required, warnings }
 }
