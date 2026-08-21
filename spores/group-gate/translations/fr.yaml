@@ -1,0 +1,4 @@
+reason:
+  not-member: "n'est pas membre du groupe configuré"
+  unavailable: "le canal ne peut pas indiquer les membres du groupe"
+  unstarted: "group-gate n'a pas démarré"

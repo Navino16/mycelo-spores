@@ -13,6 +13,14 @@
         "yaml": "^2.9.0",
       },
     },
+    "spores/group-gate": {
+      "name": "@mycelo/spore-group-gate",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mycelo/septum": "^0.8.0",
+        "zod": "^4.4.3",
+      },
+    },
     "spores/help": {
       "name": "@mycelo/spore-help",
       "version": "0.1.0",
@@ -61,6 +69,8 @@
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
 
     "@mycelo/septum": ["@mycelo/septum@0.8.0", "", { "dependencies": { "intl-messageformat": "^11.2.13", "zod": "^4.4.3" } }, "sha512-QREL4YZWztRdsZJt+s9lRXRMHeqUezTck1Do25AImlhVE4YE0IW6fTDNUQQ8m29nQVG4fv1Wnbz63JnYQZgMag=="],
+
+    "@mycelo/spore-group-gate": ["@mycelo/spore-group-gate@workspace:spores/group-gate"],
 
     "@mycelo/spore-help": ["@mycelo/spore-help@workspace:spores/help"],
 

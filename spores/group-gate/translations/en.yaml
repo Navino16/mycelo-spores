@@ -1,0 +1,4 @@
+reason:
+  not-member: "not a member of the configured group"
+  unavailable: "the channel cannot report group membership"
+  unstarted: "group-gate did not start"
