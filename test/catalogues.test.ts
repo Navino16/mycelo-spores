@@ -78,15 +78,17 @@ function assertSameKeySet(catalogues: Catalogue[]): void {
   }
 }
 
-function renderEveryKey(catalogues: Catalogue[]): string[] {
+function collectParams(catalogues: Catalogue[]): Record<string, string> {
   const names = new Set<string>()
   for (const c of catalogues) {
     for (const m of c.messages.values()) collectArgumentNames(m.getAst(), names)
   }
   // One shared bag: an unused name is ignored, and a message needing a name outside the
   // union throws MissingValueError, which fails as loudly as a surviving brace.
-  const params = Object.fromEntries([...names].map((n) => [n, `<${n}>`]))
+  return Object.fromEntries([...names].map((n) => [n, `<${n}>`]))
+}
 
+function renderEveryKey(catalogues: Catalogue[], params: Record<string, string>): string[] {
   const broken: string[] = []
   for (const c of catalogues) {
     for (const [key, message] of c.messages) {
@@ -113,7 +115,12 @@ describe('the fixture catalogues', () => {
   })
 
   it('renders every key in every locale with no unsubstituted placeholder', () => {
-    expect(renderEveryKey(catalogues)).toEqual([])
+    const params = collectParams(catalogues)
+    // Guards the AST walk itself: a walker silently returning no names would format every
+    // message with an empty bag, and a catalogue with no interpolated message at all would
+    // then pass with nothing caught.
+    expect(Object.keys(params).length).toBeGreaterThan(0)
+    expect(renderEveryKey(catalogues, params)).toEqual([])
   })
 })
 
@@ -128,6 +135,6 @@ describe('every spore catalogue', () => {
   })
 
   it('renders every key in every locale with no unsubstituted placeholder', () => {
-    expect(renderEveryKey(catalogues)).toEqual([])
+    expect(renderEveryKey(catalogues, collectParams(catalogues))).toEqual([])
   })
 })
