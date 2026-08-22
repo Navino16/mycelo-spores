@@ -36,9 +36,11 @@ describe('the cross-spore import rule', () => {
   }, 30_000)
 
   it('allows a type-only import from another spore', async () => {
+    // The specifier must match `@mycelo/spore-*` or the test discriminates nothing: with
+    // `@mycelo/septum` here, flipping allowTypeImports off leaves this green.
     writeProbe([
-      "import type { EnzymeModule } from '@mycelo/septum'",
-      'export type X = EnzymeModule',
+      "import type { LinksConfig } from '@mycelo/spore-links'",
+      'export type X = LinksConfig',
       '',
     ].join('\n'))
     const { code, output } = await lintProbe()
