@@ -36,6 +36,14 @@
         "zod": "^4.4.3",
       },
     },
+    "spores/radarr": {
+      "name": "@mycelo/spore-radarr",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mycelo/septum": "^0.9.0",
+        "zod": "^4.4.3",
+      },
+    },
     "spores/signal": {
       "name": "@mycelo/spore-signal",
       "version": "0.1.0",
@@ -83,6 +91,8 @@
     "@mycelo/spore-help": ["@mycelo/spore-help@workspace:spores/help"],
 
     "@mycelo/spore-links": ["@mycelo/spore-links@workspace:spores/links"],
+
+    "@mycelo/spore-radarr": ["@mycelo/spore-radarr@workspace:spores/radarr"],
 
     "@mycelo/spore-signal": ["@mycelo/spore-signal@workspace:spores/signal"],
 

@@ -1,0 +1,4 @@
+error:
+  unreachable: "Radarr did not answer ({detail})"
+  unauthorized: "Radarr refused the API key ({detail})"
+  unexpected: "Radarr answered something unexpected ({detail})"
