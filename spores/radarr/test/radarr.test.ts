@@ -108,13 +108,48 @@ describe('the radarr calendar', () => {
 
 describe('the radarr lookup', () => {
   it('marks what is in the library and what is not', async () => {
+    // findings §3: a miss carries NO id key. A fixture using `id: 0` instead lets a mutant reading
+    // `id === 0` pass while inverting every real result.
     fake.route('/api/v3/movie/lookup', { body: [
       { title: 'Held', year: 2021, id: 12 },
-      { title: 'Absent', year: 1984, id: 0 },
+      { title: 'Absent', year: 1984 },
     ] })
     const { api } = await started()
     const results = await api.search('dune') as readonly SearchResult[]
     expect(results.map((r) => r.inLibrary)).toEqual([true, false])
+  })
+
+  it('treats an id of zero as absent too, which the wire shape does not produce', async () => {
+    fake.route('/api/v3/movie/lookup', { body: [{ title: 'Zero', year: 2000, id: 0 }] })
+    const { api } = await started()
+    expect((await api.search('zero') as readonly SearchResult[])[0]?.inLibrary).toBe(false)
+  })
+
+  it('answers an empty array for a term that matches nothing', async () => {
+    fake.route('/api/v3/movie/lookup', { body: [] })
+    const { api } = await started()
+    expect(await api.search('zzzqqqxyw')).toEqual([])
+  })
+
+  it('names error.unauthorized when the key is refused', async () => {
+    fake.route('/api/v3/movie/lookup', { status: 401, body: {} })
+    const { api } = await started()
+    const result = await api.search('dune')
+    expect(isRef(result) ? result.key : '').toBe('error.unauthorized')
+  })
+
+  it('names error.unexpected when the body is not an array', async () => {
+    fake.route('/api/v3/movie/lookup', { body: { message: 'surprise' } })
+    const { api } = await started()
+    const result = await api.search('dune')
+    expect(isRef(result) ? result.key : '').toBe('error.unexpected')
+  })
+
+  it('names error.unreachable when the host is gone', async () => {
+    const { api } = await started()
+    fake.stop()
+    const result = await api.search('dune')
+    expect(isRef(result) ? result.key : '').toBe('error.unreachable')
   })
 })
 
