@@ -1,0 +1,4 @@
+error:
+  unreachable: "Plex n'a pas répondu ({detail})"
+  unauthorized: "Plex a refusé le jeton ({detail})"
+  unexpected: "Plex a répondu quelque chose d'inattendu ({detail})"

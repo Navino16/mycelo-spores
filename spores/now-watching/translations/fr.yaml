@@ -1,0 +1,11 @@
+reply:
+  list: "en cours de lecture :\n{lines}"
+  empty: "personne ne regarde quoi que ce soit"
+  none: "aucun serveur multimédia n'est installé"
+  plex-film: "{title} — {user} sur {player} ({progress} %){state, select, paused { — en pause} other {}}"
+  plex-episode: "{series}, {title} — {user} sur {player} ({progress} %){state, select, paused { — en pause} other {}}"
+  jellyfin-film: "{title} — {user} sur {device}"
+  jellyfin-episode: "{series}, {title} — {user} sur {device}"
+command:
+  watching:
+    description: "Affiche ce que le serveur multimédia de la maison joue en ce moment"

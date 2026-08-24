@@ -54,11 +54,17 @@ z.object({
 | Key | Type | Required | Meaning |
 |---|---|---|---|
 | `socket` | string | yes | Path to the `signal-cli` daemon's unix socket |
-| `account` | string | yes | The bot's own number, in E.164 — the one place a real phone number belongs |
+| `account` | string | yes | The bot's own number, in E.164 — the one place a real phone number belongs. Declared secret, so it reads back as `••••` |
 
-Both are required, so the spore is **disabled until configured**. No format is enforced on either
-value beyond non-emptiness: `signal-cli`'s own error is more useful than a validator that is
-stricter than the service it configures.
+Both are required and neither has a default, so an unconfigured `signal` is **dormant** — it
+germinates and then fails `connect()`. On a **fresh** installation the first synchronisation
+*enables* every spore it finds, so the very first boot is already the one where `signal` is
+enabled and dormant; on an installation that has booted before, a newly found spore is recorded
+**disabled** and nothing happens until you enable it. A dormant hypha silences only its own
+channel, unlike `group-gate`.
+
+No format is enforced on either value beyond non-emptiness: `signal-cli`'s own error is more
+useful than a validator that is stricter than the service it configures.
 
 ## `connect()` fails loudly, naming the socket
 
@@ -112,5 +118,5 @@ Mycelo).
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.8.0` and a Mycelo core at phase 7 or later. Measured against
+Needs `@mycelo/septum@^0.9.0` and a Mycelo core at phase 7 or later. Measured against
 `signal-cli 0.14.7+morph027+1`.

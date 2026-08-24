@@ -8,11 +8,16 @@ rather than duplicating an allowlist.
 ## An unconfigured or misconfigured `group-gate` refuses ALL traffic on EVERY channel
 
 This spore declares `enforcing: true`. A **dormant** `enforcing` inhibitor refuses every message
-on every channel, whatever made it dormant — a typo in `channel` or `groupId`, a channel that
-cannot report group membership, anything. This is deliberate (core design §5.1: "a security rule
-is never silently inert"), and it is also a real foot-gun: **admission runs before any command
-can reach the bot**, so no `/plugin-disable` or config command can undo it. Recovery is through
-the HTTP API's plugin routes or directly against the database — not from any channel.
+on every channel, whatever made it dormant — no configuration at all, a typo in `channel`, a
+channel that cannot report group membership, anything `start()` rejects. This is deliberate (core
+design §5.1: "a security rule is never silently inert"), and it is also a real foot-gun:
+**admission runs before any command can reach the bot**, so no `/plugin-disable` or config command
+can undo it. Recovery is through the HTTP API's plugin routes or directly against the database —
+not from any channel.
+
+A typo in `groupId` is the milder failure and is **not** in that set: it is validated only as a
+non-empty string and `start()` never looks at it, so the spore germinates and refuses only the
+configured channel. See "Configuration" below — it fails closed and silently, with no diagnostic.
 
 **`channel` and `groupId` are both required and neither has a default, so a `group-gate` that has
 never been configured is dormant — which means installing it and booting silences the whole bot.**
@@ -107,4 +112,4 @@ both supplied by the core.
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.8.0` and a Mycelo core at phase 7 or later.
+Needs `@mycelo/septum@^0.9.0` and a Mycelo core at phase 7 or later.

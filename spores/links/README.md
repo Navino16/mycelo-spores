@@ -9,7 +9,11 @@ Two commands, both code-backed:
 | Command | Args | Answers |
 |---|---|---|
 | `links` | none | Every configured service, one line each: label, URL, and its note if it has one |
-| `link` | `label` (required) | One service by label, or a refusal naming what labels exist |
+| `link` | `label` | One service by label; a refusal naming what labels exist; or, with no argument at all, a usage line |
+
+The manifest declares `label` as `required: true`, but **no core code reads `ArgSpec.required`**:
+a missing argument reaches the handler as `undefined` regardless, so `link` answers the usage line
+itself rather than relying on a gate that does not exist.
 
 ## Configuration
 
@@ -54,4 +58,4 @@ No `rhiza`. `links` answers entirely from its own settings.
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.8.0` and a Mycelo core at phase 7 or later.
+Needs `@mycelo/septum@^0.9.0` and a Mycelo core at phase 7 or later.

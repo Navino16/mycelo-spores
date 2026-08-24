@@ -24,9 +24,19 @@ Four kinds of plugin live here:
 | [`links`](spores/links) | `enzyme` | `/links` and `/link <label>` answer with the house's own service URLs | yes, but it answers "none configured" until you do |
 | [`group-gate`](spores/group-gate) | `inhibitor` | Admits only members of a group the channel itself holds — a real Signal group, not a duplicated allowlist | **yes, before its first boot** |
 | [`signal`](spores/signal) | `hypha` | Signal channel, over a `signal-cli` JSON-RPC daemon **the operator runs themselves** | **yes**, plus that daemon |
+| [`radarr`](spores/radarr) | `rhiza` | Radarr's release calendar and library search, pull only | **yes** |
+| [`plex`](spores/plex) | `rhiza` | A Plex Media Server: who is watching what, right now | **yes** |
+| [`upcoming-movies`](spores/upcoming-movies) | `enzyme` | `/upcoming` lists the films Radarr expects, and whether it already holds the file | no |
+| [`now-watching`](spores/now-watching) | `enzyme` | `/watching` shows what the house's media server is playing | no |
 
-Every spore here requires `@mycelo/septum@^0.8.0` and a Mycelo core at phase 7 or later. Read each
-spore's own README before installing it.
+Every spore here depends on `@mycelo/septum@^0.9.0`. `help`, `links`, `group-gate` and `signal`
+need a Mycelo core at phase 7 or later; `radarr`, `plex`, `upcoming-movies` and `now-watching` need
+phase 7.5 or later. Read each spore's own README before installing it.
+
+Those first four still declare `septum: "^0.8"` in their `spore.yaml`, and that is deliberate: a
+manifest declares the **minimum contract the plugin needs**, while `package.json` declares what to
+resolve. Under 0.x caret semantics `^0.8.0` excludes `0.9.0`, so a `package.json` saying `^0.8.0`
+would put two copies of septum in the tree.
 
 ## Installing, until phase 8
 
@@ -43,6 +53,13 @@ channel. That is the correct behaviour for a security gate and a poor first five
 Either install only the spores you have configured, or follow
 [`group-gate`'s own instructions](spores/group-gate/README.md#an-unconfigured-or-misconfigured-group-gate-refuses-all-traffic-on-every-channel)
 and configure both before the boot that germinates them.
+
+`radarr` and `plex` also have required settings with no defaults, and the same first-synchronisation
+auto-enable applies to them — but the failure they produce is a different one. Neither is
+`enforcing`, so an unconfigured one going dormant silences nothing else on the bot. What it does is
+make its dependent command vanish with no explanation: an unconfigured `radarr` takes `/upcoming`
+with it, because `upcoming-movies` requires that rhiza; an unconfigured `plex` takes `/watching`
+with it the same way, through `now-watching`'s `any_of`.
 
 Contributing guidelines and the plugin authoring guide will land with the core's
 documentation phase.

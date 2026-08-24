@@ -36,7 +36,7 @@ async function findGroup(rpc: SignalRpc, account: string, groupId: string): Prom
 }
 
 export default {
-  configSchema: defineConfig(schema),
+  configSchema: defineConfig(schema, { secrets: ['account'] }),
   create: () => {
     let config: Config | null = null
     let logger: Logger | null = null

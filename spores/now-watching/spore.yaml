@@ -1,0 +1,10 @@
+kind: enzyme
+name: now-watching
+septum: "^0.9"
+description: Answers with what the house's media server is playing right now.
+requires:
+  - any_of: [{ rhiza: jellyfin }, { rhiza: plex }]
+commands:
+  - name: watching
+    description: command.watching.description
+    code: handleWatching

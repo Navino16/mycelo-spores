@@ -1,0 +1,4 @@
+error:
+  unreachable: "Plex did not answer ({detail})"
+  unauthorized: "Plex refused the token ({detail})"
+  unexpected: "Plex answered something unexpected ({detail})"
