@@ -99,6 +99,27 @@ describe('the now-watching spore', () => {
     expect(text).toContain('playing')
   })
 
+  it('passes paused for a paused session and playing for a playing one, in that direction', async () => {
+    // One session per call: with two, asserting both words are present passes with the pair swapped.
+    const paused = stub({ plex: [session({ paused: true })] })
+    await module.create().handlers.handleWatching(call(), paused.ctx)
+    expect(paused.sent[0]?.text).toContain('paused')
+    expect(paused.sent[0]?.text).not.toContain('playing')
+
+    const playing = stub({ plex: [session({ paused: false })] })
+    await module.create().handlers.handleWatching(call(), playing.ctx)
+    expect(playing.sent[0]?.text).toContain('playing')
+    expect(playing.sent[0]?.text).not.toContain('paused')
+  })
+
+  it('names the player, not the user, as the device', async () => {
+    const { ctx, sent } = stub({ plex: [session({ user: 'alice', player: 'living room' })] })
+    await module.create().handlers.handleWatching(call(), ctx)
+    const text = sent[0]?.text ?? ''
+    expect(text).toContain('living room')
+    expect(text).toContain('alice')
+  })
+
   it('answers the empty case when nobody is watching', async () => {
     const { ctx, sent } = stub({ plex: [] })
     await module.create().handlers.handleWatching(call(), ctx)

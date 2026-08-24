@@ -132,6 +132,52 @@ describe('plex sessions', () => {
     const result = await api.sessions()
     expect(isRef(result) ? result.key : '').toBe('error.unauthorized')
   })
+
+  it('names its own domain on the ref, not another spore\'s', async () => {
+    fake.route('/status/sessions', { status: 401, body: {} })
+    const { api } = await started()
+    // A consumer's manifest permits the domains it requires; a ref naming radarr resolves in no
+    // catalogue the reader is allowed, so the key reaches them literally.
+    expect(await api.sessions()).toEqual({
+      domain: 'plex',
+      key: 'error.unauthorized',
+      params: { detail: 'HTTP 401' },
+    })
+  })
+
+  it('names error.unexpected when Metadata is present but not a list', async () => {
+    fake.route('/status/sessions', { body: { MediaContainer: { Metadata: { title: 'one' } } } })
+    const { api } = await started()
+    const result = await api.sessions()
+    // Answering [] here would report a moved wire shape as nobody watching.
+    expect(isRef(result) ? result.key : '').toBe('error.unexpected')
+  })
+
+  it('caps progress at 100 when the offset runs past the duration', async () => {
+    fake.route('/status/sessions', { body: { MediaContainer: { Metadata: [
+      { ...film, viewOffset: 2_000_000, duration: 1_500_000 },
+    ] } } })
+    const { api } = await started()
+    expect((await api.sessions() as readonly PlexSession[])[0]?.progress).toBe(100)
+  })
+
+  it('answers ? for a session carrying neither a user nor a player', async () => {
+    fake.route('/status/sessions', { body: { MediaContainer: { Metadata: [
+      { title: 'Anonymous', viewOffset: 1, duration: 2 },
+    ] } } })
+    const { api } = await started()
+    const session = (await api.sessions() as readonly PlexSession[])[0]
+    expect(session?.user).toBe('?')
+    expect(session?.player).toBe('?')
+  })
+
+  it('names error.unreachable, with the domain, before start()', async () => {
+    expect(await module.create().api.sessions()).toEqual({
+      domain: 'plex',
+      key: 'error.unreachable',
+      params: { detail: 'not started' },
+    })
+  })
 })
 
 describe('plex health', () => {
@@ -175,10 +221,14 @@ describe('plex health', () => {
     expect(await health()).toMatchObject({ state: 'degraded' })
   })
 
-  it('is degraded when identity answers a body that is not JSON', async () => {
-    fake.route('/identity', { raw: '<html>hello</html>' })
+  it('is degraded when identity answers a body that is not JSON, and names the content type', async () => {
+    fake.route('/identity', { raw: '<?xml version="1.0"?><MediaContainer/>', type: 'text/xml' })
     const { health } = await started()
-    expect(await health()).toMatchObject({ state: 'degraded' })
+    const status = await health()
+    // findings §5: without the JSON opt-in Plex answers XML. The content type is what tells that
+    // apart from an authentication proxy's HTML, and both arrive as a 200.
+    expect(status.state).toBe('degraded')
+    expect(status.detail).toContain('text/xml')
   })
 
   it('maps a failure kind to a state, whichever request produced it', () => {

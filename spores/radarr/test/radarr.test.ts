@@ -6,6 +6,7 @@ import { rhizaChecks } from '@mycelo/septum/conformance'
 import type { HealthStatus, Logger, RhizaContext, TranslatableRef } from '@mycelo/septum'
 import module from '../src/index.js'
 import type { CalendarEntry, RadarrApi, SearchResult } from '../src/api.js'
+import { parseCalendar } from '../src/parse.js'
 import { startFakeRadarr } from './fake-radarr.js'
 import type { FakeRadarr } from './fake-radarr.js'
 
@@ -104,6 +105,76 @@ describe('the radarr calendar', () => {
     const entries = await api.calendar(30) as readonly CalendarEntry[]
     expect(entries.map((e) => e.title)).toEqual(['Dated'])
   })
+
+  it('reads all three release fields, not only digitalRelease (findings §2)', async () => {
+    fake.route('/api/v3/calendar', { body: [
+      { title: 'Physical', physicalRelease: iso(5) },
+      { title: 'Cinemas', inCinemas: iso(8) },
+    ] })
+    const { api } = await started()
+    const entries = await api.calendar(30) as readonly CalendarEntry[]
+    expect(entries.map((e) => e.title)).toEqual(['Physical', 'Cinemas'])
+  })
+
+  it('takes the earliest of several dates that fall inside the window', async () => {
+    const early = iso(2)
+    fake.route('/api/v3/calendar', { body: [{ title: 'Two', inCinemas: early, digitalRelease: iso(9) }] })
+    const { api } = await started()
+    const entries = await api.calendar(30) as readonly CalendarEntry[]
+    expect(entries[0]?.releaseAt.toISOString()).toBe(early)
+  })
+
+  it('prefers a date inside the window over an earlier one outside it', async () => {
+    // Without the window filter the earliest date wins outright, which prints a release in the past
+    // for a film Radarr listed because of its digital date (findings §2.1).
+    const inside = iso(5)
+    fake.route('/api/v3/calendar', { body: [{ title: 'Reissue', inCinemas: iso(-40), digitalRelease: inside }] })
+    const { api } = await started()
+    const entries = await api.calendar(30) as readonly CalendarEntry[]
+    expect(entries[0]?.releaseAt.toISOString()).toBe(inside)
+  })
+
+  it('skips an entry whose title is an empty string', async () => {
+    fake.route('/api/v3/calendar', { body: [{ title: '', digitalRelease: iso(5) }] })
+    const { api } = await started()
+    expect(await api.calendar(30)).toEqual([])
+  })
+
+  it('skips an entry whose date does not parse rather than answering Invalid Date', async () => {
+    fake.route('/api/v3/calendar', { body: [{ title: 'Soon', digitalRelease: 'soon' }] })
+    const { api } = await started()
+    expect(await api.calendar(30)).toEqual([])
+  })
+
+  it('counts what it skipped, which is the only signal that the wire shape moved', () => {
+    const from = new Date()
+    const to = new Date(from.getTime() + 30 * 86_400_000)
+    const parsed = parseCalendar([{ title: 'Undated' }, { title: 'Dated', digitalRelease: iso(5) }], from, to)
+    expect(parsed?.skipped).toBe(1)
+    expect(parsed?.entries.length).toBe(1)
+  })
+
+  it('sends a window whose end is `days` after its start', async () => {
+    fake.route('/api/v3/calendar', { body: [] })
+    const { api } = await started()
+    await api.calendar(7)
+    const query = new URLSearchParams(fake.requests[0]?.query ?? '')
+    const span = Date.parse(query.get('end') ?? '') - Date.parse(query.get('start') ?? '')
+    expect(span).toBeGreaterThan(0)
+    expect(Math.round(span / 86_400_000)).toBe(7)
+  })
+
+  it('reaches a reverse-proxied install whose configured url ends in a slash', async () => {
+    fake.route('/radarr/api/v3/calendar', { body: [] })
+    const rhiza = module.create()
+    await rhiza.start(context(`${fake.url}/radarr/`))
+    expect(await rhiza.api.calendar(30)).toEqual([])
+  })
+
+  it('names error.unreachable, with the domain, before start()', async () => {
+    const result = await module.create().api.calendar(30)
+    expect(result).toEqual({ domain: 'radarr', key: 'error.unreachable', params: { detail: 'not started' } })
+  })
 })
 
 describe('the radarr lookup', () => {
@@ -129,6 +200,20 @@ describe('the radarr lookup', () => {
     fake.route('/api/v3/movie/lookup', { body: [] })
     const { api } = await started()
     expect(await api.search('zzzqqqxyw')).toEqual([])
+  })
+
+  it('skips a result carrying no year rather than answering an undefined one', async () => {
+    fake.route('/api/v3/movie/lookup', { body: [{ title: 'Yearless' }, { title: 'Dune', year: 2021 }] })
+    const { api } = await started()
+    const results = await api.search('dune') as readonly SearchResult[]
+    expect(results.map((r) => r.title)).toEqual(['Dune'])
+  })
+
+  it('escapes the term, so one carrying an ampersand is not truncated', async () => {
+    fake.route('/api/v3/movie/lookup', { body: [] })
+    const { api } = await started()
+    await api.search('this & that')
+    expect(fake.requests[0]?.query).toContain('%26')
   })
 
   it('names error.unauthorized when the key is refused', async () => {
@@ -174,6 +259,22 @@ describe('radarr health', () => {
     fake.route('/api/v3/system/status', { status: 401, body: {} })
     const { health } = await started()
     expect(await health()).toMatchObject({ state: 'degraded' })
+  })
+
+  it('is degraded on a server error, and says which status', async () => {
+    fake.route('/api/v3/system/status', { status: 503, body: {} })
+    const { health } = await started()
+    expect(await health()).toMatchObject({ state: 'degraded', detail: 'HTTP 503' })
+  })
+
+  it('names the content type when a 200 carries HTML instead of JSON (findings §1.2)', async () => {
+    fake.route('/api/v3/system/status', { raw: '<html>sign in</html>', type: 'text/html' })
+    const { health } = await started()
+    const status = await health()
+    // The content type is the only thing that tells an authentication proxy apart from a broken
+    // Radarr, and both answer 200.
+    expect(status.state).toBe('degraded')
+    expect(status.detail).toContain('text/html')
   })
 
   it('is unreachable when the host is gone', async () => {

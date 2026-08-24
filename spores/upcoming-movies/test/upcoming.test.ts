@@ -37,7 +37,7 @@ interface Stub {
   sent: { text?: string }[]
 }
 
-function stub(answer: readonly CalendarEntry[] | TranslatableRef, defaultDays = 30): Stub {
+function stub(answer: readonly CalendarEntry[] | TranslatableRef, defaultDays = 30, locale = 'en'): Stub {
   const sent: { text?: string }[] = []
   const api: RadarrApi = {
     calendar: () => Promise.resolve(answer),
@@ -45,7 +45,7 @@ function stub(answer: readonly CalendarEntry[] | TranslatableRef, defaultDays = 
   }
   const ctx = {
     config: { defaultDays },
-    locale: 'en',
+    locale,
     logger: { debug: () => undefined, info: () => undefined, warn: () => undefined, error: () => undefined, child: () => ctx.logger },
     rhiza: () => api,
     has: () => true,
@@ -81,6 +81,19 @@ describe('the upcoming-movies spore', () => {
     expect(text).toContain('reply.held')
   })
 
+  it('awaits a film with no file and holds one with a file, in that direction', async () => {
+    // One entry per call: with two, asserting both keys are present passes with the pair swapped.
+    const awaited = stub([entry('Dune', 3, false)])
+    await module.create().handlers.handleUpcoming(call(), awaited.ctx)
+    expect(awaited.sent[0]?.text).toContain('reply.awaited')
+    expect(awaited.sent[0]?.text).not.toContain('reply.held')
+
+    const held = stub([entry('Arrival', 10, true)])
+    await module.create().handlers.handleUpcoming(call(), held.ctx)
+    expect(held.sent[0]?.text).toContain('reply.held')
+    expect(held.sent[0]?.text).not.toContain('reply.awaited')
+  })
+
   it('answers the empty case, which a quiet month is', async () => {
     const { ctx, sent } = stub([])
     await module.create().handlers.handleUpcoming(call(), ctx)
@@ -105,6 +118,27 @@ describe('the upcoming-movies spore', () => {
       await module.create().handlers.handleUpcoming(call({ days }), ctx)
       expect(sent[0]?.text, `days=${days}`).toBe('reply.usage({})')
     }
+  })
+
+  it('truncates a fractional argument rather than refusing it', async () => {
+    // The chosen behaviour, not an accident: for a chat command a useful answer beats a pedantic
+    // refusal. `Number(given)` instead of parseInt would print usage.
+    const { ctx, sent } = stub([])
+    await module.create().handlers.handleUpcoming(call({ days: '5.7' }), ctx)
+    expect(sent[0]?.text).toBe('reply.empty({"days":5})')
+  })
+
+  it('falls back to the operator default for an empty argument', async () => {
+    const { ctx, sent } = stub([], 7)
+    await module.create().handlers.handleUpcoming(call({ days: '' }), ctx)
+    expect(sent[0]?.text).toBe('reply.empty({"days":7})')
+  })
+
+  it('formats the date in the reader\'s locale, not always in English', async () => {
+    const fixed: CalendarEntry = { title: 'Dune', releaseAt: new Date('2026-03-05T12:00:00Z'), hasFile: false }
+    const { ctx, sent } = stub([fixed], 30, 'fr')
+    await module.create().handlers.handleUpcoming(call(), ctx)
+    expect(sent[0]?.text).toContain('mars')
   })
 
   it('renders the rhiza ref rather than inventing a sentence of its own', async () => {
