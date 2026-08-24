@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -6,8 +6,7 @@ const ROOT = join(import.meta.dirname, '..')
 const DIR = join(ROOT, 'test', 'lint')
 
 // One probe file per case rather than a shared path: the cases shell out to eslint over the live
-// tree, so a shared path makes them race. The directory is removed once, after all of them, and a
-// stale `*.generated.ts` from an aborted run would break `eslint .` for the whole repository.
+// tree, so a shared path makes them race.
 async function lint(name: string, lines: readonly string[]): Promise<{ code: number, output: string }> {
   const probe = join(DIR, `${name}.generated.ts`)
   mkdirSync(DIR, { recursive: true })
@@ -24,6 +23,9 @@ async function lint(name: string, lines: readonly string[]): Promise<{ code: num
   }
 }
 
+// Both ends, because a `*.generated.ts` surviving an aborted run breaks `eslint .` for the whole
+// repository, and the config cannot ignore the directory without making these tests measure nothing.
+beforeAll(() => { rmSync(DIR, { recursive: true, force: true }) })
 afterAll(() => { rmSync(DIR, { recursive: true, force: true }) })
 
 describe('the cross-spore import rule', () => {
