@@ -1,0 +1,12 @@
+reply:
+  list: "in the next {days} days:\n{lines}"
+  held: "{title} — {date} (already downloaded)"
+  awaited: "{title} — {date}"
+  empty: "nothing is due in the next {days} days"
+  usage: "usage: /upcoming '<days>' — a whole number of days between 1 and 365"
+command:
+  upcoming:
+    description: "List the films Radarr expects in the coming days"
+arg:
+  days:
+    description: "How many days ahead to look"

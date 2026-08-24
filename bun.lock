@@ -60,6 +60,15 @@
         "zod": "^4.4.3",
       },
     },
+    "spores/upcoming-movies": {
+      "name": "@mycelo/spore-upcoming-movies",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mycelo/septum": "^0.9.0",
+        "@mycelo/spore-radarr": "^0.1.0",
+        "zod": "^4.4.3",
+      },
+    },
   },
   "packages": {
     "@eslint-community/eslint-utils": ["@eslint-community/eslint-utils@4.10.1", "", { "dependencies": { "eslint-visitor-keys": "^3.4.3" }, "peerDependencies": { "eslint": "^6.0.0 || ^7.0.0 || >=8.0.0" } }, "sha512-cuadcxVFE8sDK6iWJbs8Sn0av2Nrh2QSGQhVlBW9AaAHqHwjWsZHT8LJ4hFGPh7ASBV2deFdM7H/DPjulmh8rg=="],
@@ -105,6 +114,8 @@
     "@mycelo/spore-radarr": ["@mycelo/spore-radarr@workspace:spores/radarr"],
 
     "@mycelo/spore-signal": ["@mycelo/spore-signal@workspace:spores/signal"],
+
+    "@mycelo/spore-upcoming-movies": ["@mycelo/spore-upcoming-movies@workspace:spores/upcoming-movies"],
 
     "@types/bun": ["@types/bun@1.4.0", "", { "dependencies": { "bun-types": "1.4.0" } }, "sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ=="],
 

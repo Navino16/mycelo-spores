@@ -1,0 +1,14 @@
+kind: enzyme
+name: upcoming-movies
+septum: "^0.9"
+description: Renders Radarr's release calendar as a chat reply.
+requires:
+  - rhiza: radarr
+commands:
+  - name: upcoming
+    description: command.upcoming.description
+    code: handleUpcoming
+    args:
+      - name: days
+        description: arg.days.description
+        required: false

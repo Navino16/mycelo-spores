@@ -1,0 +1,12 @@
+{
+  "name": "@mycelo/spore-upcoming-movies",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "@mycelo/septum": "^0.9.0",
+    "@mycelo/spore-radarr": "^0.1.0",
+    "zod": "^4.4.3"
+  }
+}
