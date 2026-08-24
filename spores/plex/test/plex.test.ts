@@ -192,6 +192,18 @@ describe('plex health', () => {
     expect(await health()).toMatchObject({ state: 'healthy', detail: 'Plex 1.41.0' })
   })
 
+  it('is degraded when identity answers without a version, and says so', async () => {
+    fake.route('/identity', { body: { MediaContainer: { size: 0 } } })
+    fake.route('/status/sessions', { body: { MediaContainer: { size: 0 } } })
+    const { health } = await started()
+    // findings §4: /identity always carries a version, so a 200 without one is a shape anomaly.
+    // radarr reports the same condition the same way; reporting healthy here hid it.
+    expect(await health()).toMatchObject({
+      state: 'degraded',
+      detail: 'identity carried no version',
+    })
+  })
+
   it('is degraded, not unreachable, when the host is up and the token is refused', async () => {
     fake.route('/identity', { body: { MediaContainer: { version: '1.41.0' } } })
     fake.route('/status/sessions', { status: 401, body: {} })
@@ -296,5 +308,28 @@ describe('the plex spore', () => {
       invalidConfig: { url: 'nope', token: '' },
     })
     expect(failures).toEqual([])
+  })
+
+  it('declares the token as a secret, so the core stores it masked', () => {
+    // Without the declaration the core writes is_secret = 0 and GET /api/plugins/plex/settings
+    // serves the token in the clear. The kit catches a typo'd name and cannot see an omission.
+    expect(module.configSchema.secrets).toEqual(['token'])
+  })
+
+  it('emits its refs under the domain its own manifest names', async () => {
+    const manifest = parseYaml(readFileSync(join(here, 'spore.yaml'), 'utf8')) as { name: string }
+    const result = await module.create().api.sessions()
+    // The core's bindTranslate throws on a domain no manifest declares, so renaming either side
+    // alone turns every Plex failure from a sentence into a thrown handler.
+    expect(isRef(result) ? result.domain : '').toBe(manifest.name)
+  })
+
+  it('rejects each setting on its own, not only both at once', () => {
+    const accepts = (c: unknown): boolean => module.configSchema.safeParse(c).success
+    expect(accepts({ url: 'http://plex.example:32400', token: 't' })).toBe(true)
+    // invalidConfig violates both fields, so the kit's single check is satisfied by either
+    // validator alone. A bare host is what an operator actually types.
+    expect(accepts({ url: 'plex.example', token: 't' })).toBe(false)
+    expect(accepts({ url: 'http://plex.example:32400', token: '' })).toBe(false)
   })
 })

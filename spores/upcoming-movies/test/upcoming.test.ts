@@ -35,10 +35,13 @@ function known(key: string): string {
 interface Stub {
   ctx: EnzymeContext<{ defaultDays: number }>
   sent: { text?: string }[]
+  /** The rhiza names the handler asked for, so the manifest can be checked against them. */
+  asked: string[]
 }
 
 function stub(answer: readonly CalendarEntry[] | TranslatableRef, defaultDays = 30, locale = 'en'): Stub {
   const sent: { text?: string }[] = []
+  const asked: string[] = []
   const api: RadarrApi = {
     calendar: () => Promise.resolve(answer),
     search: () => Promise.resolve([]),
@@ -47,14 +50,14 @@ function stub(answer: readonly CalendarEntry[] | TranslatableRef, defaultDays = 
     config: { defaultDays },
     locale,
     logger: { debug: () => undefined, info: () => undefined, warn: () => undefined, error: () => undefined, child: () => ctx.logger },
-    rhiza: () => api,
+    rhiza: (name: string) => { asked.push(name); return api },
     has: () => true,
     t: (key: string | TranslatableRef, params: Record<string, unknown> = {}) => (typeof key === 'string'
       ? `${known(key)}(${JSON.stringify(params)})`
       : `${key.domain}:${key.key}`),
     reply: async (content: { text?: string }) => { sent.push(content) },
   }
-  return { ctx: ctx as unknown as EnzymeContext<{ defaultDays: number }>, sent }
+  return { ctx: ctx as unknown as EnzymeContext<{ defaultDays: number }>, sent, asked }
 }
 
 const call = (args: Record<string, string> = {}): Invocation =>
@@ -195,6 +198,29 @@ describe('the upcoming-movies spore', () => {
     for (const key of ['error.unreachable', 'error.unauthorized', 'error.unexpected']) {
       expect(RADARR.has(key), `radarr/en.yaml is missing ${key}`).toBe(true)
     }
+  })
+
+  it('requires the rhiza it asks for, under the name its manifest declares', async () => {
+    const manifest = parseYaml(readFileSync(join(here, 'spore.yaml'), 'utf8')) as {
+      requires?: readonly { rhiza?: string }[]
+    }
+    const { ctx, asked } = stub([])
+    await module.create().handlers.handleUpcoming(call(), ctx)
+    // Without the declaration the spore germinates clean and ctx.rhiza throws in the core's bus on
+    // every /upcoming while /api/health still says germinated; with the wrong name it is dormant.
+    // Every other test here stubs ctx.rhiza, so nothing else looks at the manifest at all.
+    expect(manifest.requires).toEqual([{ rhiza: 'radarr' }])
+    expect(asked).toEqual(['radarr'])
+  })
+
+  it('bounds defaultDays at both ends, not only the lower one', () => {
+    const accepts = (c: unknown): boolean => module.configSchema.safeParse(c).success
+    expect(accepts({ defaultDays: 30 })).toBe(true)
+    expect(accepts({ defaultDays: 0 })).toBe(false)
+    // invalidConfig violates the minimum only, so the maximum was pinned by nothing: a value above
+    // it is accepted at enable and then makes /upcoming with no argument print usage forever.
+    expect(accepts({ defaultDays: 366 })).toBe(false)
+    expect(accepts({ defaultDays: 1.5 })).toBe(false)
   })
 
   it('conforms, with its own catalogues', async () => {

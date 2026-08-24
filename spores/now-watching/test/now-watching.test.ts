@@ -35,22 +35,31 @@ interface Installed {
   plex?: readonly PlexSession[] | TranslatableRef
 }
 
-function stub(installed: Installed): { ctx: EnzymeContext<unknown>, sent: { text?: string }[] } {
+interface Stub {
+  ctx: EnzymeContext<unknown>
+  sent: { text?: string }[]
+  /** The rhiza names the handler asked for, so the manifest can be checked against them. */
+  asked: string[]
+}
+
+function stub(installed: Installed): Stub {
   const sent: { text?: string }[] = []
+  const asked: string[] = []
   const ctx = {
     config: {},
     locale: 'en',
     logger: { debug: () => undefined, info: () => undefined, warn: () => undefined, error: () => undefined, child: () => ctx.logger },
     has: (name: string) => Object.hasOwn(installed, name),
-    rhiza: (name: string) => ({
-      sessions: () => Promise.resolve(name === 'jellyfin' ? installed.jellyfin : installed.plex),
-    }),
+    rhiza: (name: string) => {
+      asked.push(name)
+      return { sessions: () => Promise.resolve(name === 'jellyfin' ? installed.jellyfin : installed.plex) }
+    },
     t: (key: string | TranslatableRef, params: Record<string, unknown> = {}) => (typeof key === 'string'
       ? `${known(key)}(${JSON.stringify(params)})`
       : `${key.domain}:${key.key}`),
     reply: async (content: { text?: string }) => { sent.push(content) },
   }
-  return { ctx: ctx as unknown as EnzymeContext<unknown>, sent }
+  return { ctx: ctx as unknown as EnzymeContext<unknown>, sent, asked }
 }
 
 const call = (): Invocation => ({ command: 'watching', args: {}, rest: '' }) as unknown as Invocation
@@ -191,6 +200,21 @@ describe('the now-watching spore', () => {
     for (const key of ['error.unreachable', 'error.unauthorized', 'error.unexpected']) {
       expect(PLEX.has(key), `plex/en.yaml is missing ${key}`).toBe(true)
     }
+  })
+
+  it('requires an any_of of exactly the two alternatives it asks for', async () => {
+    const manifest = parseYaml(readFileSync(join(here, 'spore.yaml'), 'utf8')) as {
+      requires?: readonly { any_of?: readonly { rhiza?: string }[] }[]
+    }
+    // The phase's headline claim is this group, and every test here stubs has() and rhiza(): with
+    // no `requires` the spore germinates clean and /watching throws in the core's bus, and with a
+    // name the code never probes it is dormant and /watching is gone.
+    expect(manifest.requires).toEqual([{ any_of: [{ rhiza: 'jellyfin' }, { rhiza: 'plex' }] }])
+    const jellyfin = stub({ jellyfin: [] })
+    await module.create().handlers.handleWatching(call(), jellyfin.ctx)
+    const plex = stub({ plex: [] })
+    await module.create().handlers.handleWatching(call(), plex.ctx)
+    expect([...jellyfin.asked, ...plex.asked]).toEqual(['jellyfin', 'plex'])
   })
 
   it('conforms, with its own catalogues', async () => {

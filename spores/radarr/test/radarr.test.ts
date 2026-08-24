@@ -250,10 +250,15 @@ describe('radarr health', () => {
     expect(await health()).toMatchObject({ state: 'healthy', detail: 'Radarr 5.2.6' })
   })
 
-  it('is degraded when the host answers without a version', async () => {
+  it('is degraded when the host answers without a version, and says so', async () => {
     fake.route('/api/v3/system/status', { body: { hello: true } })
     const { health } = await started()
-    expect(await health()).toMatchObject({ state: 'degraded' })
+    // findings §1: system/status always carries a version, so a 200 without one is a shape
+    // anomaly worth reporting rather than hiding behind healthy.
+    expect(await health()).toMatchObject({
+      state: 'degraded',
+      detail: 'system/status carried no version',
+    })
   })
 
   it('is degraded on a refused key, not unreachable', async () => {
@@ -312,5 +317,28 @@ describe('the radarr spore', () => {
       invalidConfig: { url: 'not-a-url', apiKey: '' },
     })
     expect(failures).toEqual([])
+  })
+
+  it('declares the API key as a secret, so the core stores it masked', () => {
+    // Without the declaration the core writes is_secret = 0 and GET /api/plugins/radarr/settings
+    // serves the key in the clear. The kit catches a typo'd name and cannot see an omission.
+    expect(module.configSchema.secrets).toEqual(['apiKey'])
+  })
+
+  it('emits its refs under the domain its own manifest names', async () => {
+    const manifest = parseYaml(readFileSync(join(here, 'spore.yaml'), 'utf8')) as { name: string }
+    const result = await module.create().api.calendar(30)
+    // The core's bindTranslate throws on a domain no manifest declares, so renaming either side
+    // alone turns every Radarr failure from a sentence into a thrown handler.
+    expect(isRef(result) ? result.domain : '').toBe(manifest.name)
+  })
+
+  it('rejects each setting on its own, not only both at once', () => {
+    const accepts = (c: unknown): boolean => module.configSchema.safeParse(c).success
+    expect(accepts({ url: 'http://radarr.example', apiKey: 'k' })).toBe(true)
+    // invalidConfig violates both fields, so the kit's single check is satisfied by either
+    // validator alone. A bare host is what an operator actually types.
+    expect(accepts({ url: 'radarr.example', apiKey: 'k' })).toBe(false)
+    expect(accepts({ url: 'http://radarr.example', apiKey: '' })).toBe(false)
   })
 })
