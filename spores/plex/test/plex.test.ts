@@ -97,7 +97,7 @@ describe('plex sessions', () => {
     expect(sessions.map((s) => s.paused)).toEqual([false, true])
   })
 
-  it('treats a container with no Metadata as nobody watching (shape inferred, findings §5.2)', async () => {
+  it('treats a container with no Metadata as nobody watching', async () => {
     fake.route('/status/sessions', { body: { MediaContainer: { size: 0 } } })
     const { api } = await started()
     expect(await api.sessions()).toEqual([])
