@@ -1,0 +1,11 @@
+reply:
+  list: "watching now:\n{lines}"
+  empty: "nobody is watching anything"
+  none: "no media server is installed"
+  plex-film: "{title} — {user} on {player} ({progress}%){state, select, paused { — paused} other {}}"
+  plex-episode: "{series}, {title} — {user} on {player} ({progress}%){state, select, paused { — paused} other {}}"
+  jellyfin-film: "{title} — {user} on {device}"
+  jellyfin-episode: "{series}, {title} — {user} on {device}"
+command:
+  watching:
+    description: "Show what is playing on the house's media server right now"

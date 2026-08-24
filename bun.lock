@@ -36,6 +36,14 @@
         "zod": "^4.4.3",
       },
     },
+    "spores/now-watching": {
+      "name": "@mycelo/spore-now-watching",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mycelo/septum": "^0.9.0",
+        "@mycelo/spore-plex": "^0.1.0",
+      },
+    },
     "spores/plex": {
       "name": "@mycelo/spore-plex",
       "version": "0.1.0",
@@ -108,6 +116,8 @@
     "@mycelo/spore-help": ["@mycelo/spore-help@workspace:spores/help"],
 
     "@mycelo/spore-links": ["@mycelo/spore-links@workspace:spores/links"],
+
+    "@mycelo/spore-now-watching": ["@mycelo/spore-now-watching@workspace:spores/now-watching"],
 
     "@mycelo/spore-plex": ["@mycelo/spore-plex@workspace:spores/plex"],
 
