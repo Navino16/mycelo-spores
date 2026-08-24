@@ -1,0 +1,4 @@
+kind: rhiza
+name: plex
+septum: "^0.9"
+description: A Plex Media Server — who is watching what, right now.
