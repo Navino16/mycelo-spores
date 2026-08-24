@@ -28,8 +28,9 @@ export async function getJson(
   try {
     return { ok: true, body: await response.json() }
   } catch (e) {
-    // A healthy host answers 200 with HTML behind an auth proxy, and Plex does without the JSON
-    // opt-in (findings §1.2, §5). The content type is the only clue to which.
+    // A healthy host can answer 200 with a body that is not JSON: HTML behind an auth proxy
+    // (findings §1.2), XML from Plex without the JSON opt-in (findings §5). The content type is the
+    // only clue to which.
     const type = response.headers.get('content-type') ?? 'no content-type'
     return { ok: false, failure: 'unexpected', detail: `${type}: ${describe(e)}` }
   }

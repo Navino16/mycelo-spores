@@ -96,17 +96,26 @@ describe('plex sessions', () => {
     expect(sessions.map((s) => s.paused)).toEqual([false, true])
   })
 
-  it('treats a container with no Metadata as nobody watching', async () => {
+  it('treats a container with no Metadata as nobody watching (shape inferred, findings §5.2)', async () => {
     fake.route('/status/sessions', { body: { MediaContainer: { size: 0 } } })
     const { api } = await started()
     expect(await api.sessions()).toEqual([])
   })
 
-  it('sends the token as a header and asks for JSON', async () => {
+  it('sends the token as a header, never a query parameter', async () => {
     fake.route('/status/sessions', { body: { MediaContainer: { size: 0 } } })
     const { api } = await started()
     await api.sessions()
     expect(fake.requests[0]?.token).toBe('the-token')
+    // A query parameter would put the credential in Plex's access log.
+    expect(fake.requests[0]?.query).not.toContain('the-token')
+  })
+
+  it('asks for JSON, without which Plex answers XML (findings §5)', async () => {
+    fake.route('/status/sessions', { body: { MediaContainer: { size: 0 } } })
+    const { api } = await started()
+    await api.sessions()
+    expect(fake.requests[0]?.accept).toBe('application/json')
   })
 
   it('names error.unexpected when there is no MediaContainer at all', async () => {
@@ -143,6 +152,18 @@ describe('plex health', () => {
     const status = await health()
     expect(status.state).toBe('degraded')
     expect(status.detail).toContain('token rejected')
+  })
+
+  it('asks /identity for JSON too, and sends it no token', async () => {
+    fake.route('/identity', { body: { MediaContainer: { version: '1.41.0' } } })
+    fake.route('/status/sessions', { body: { MediaContainer: { size: 0 } } })
+    const { health } = await started()
+    await health()
+    const identity = fake.requests.find((r) => r.path === '/identity')
+    // Both halves matter: the JSON opt-in applies to every route, and /identity must stay tokenless
+    // or it can no longer answer "is the box on" independently of the credential.
+    expect(identity?.accept).toBe('application/json')
+    expect(identity?.token).toBeNull()
   })
 
   it('is unreachable when identity does not answer', async () => {

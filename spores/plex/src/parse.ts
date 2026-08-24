@@ -25,8 +25,9 @@ export function parseSessions(body: unknown): readonly PlexSession[] | null {
   const container = asRecord(asRecord(body)?.['MediaContainer'])
   if (container === null) return null
   const metadata = container['Metadata']
-  // findings §5: nothing playing is a container with no Metadata at all, which is the empty case
-  // and not a malformed answer.
+  // findings §5.2: nothing playing is believed to be a container with no Metadata at all. INFERRED
+  // from /identity, not measured — two sessions played throughout the spike. An empty array is
+  // handled below either way.
   if (metadata === undefined) return []
   if (!isArray(metadata)) return null
   const sessions: PlexSession[] = []
