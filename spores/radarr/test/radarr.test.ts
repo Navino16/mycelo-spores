@@ -6,6 +6,7 @@ import { rhizaChecks } from '@mycelo/septum/conformance'
 import type { HealthStatus, Logger, RhizaContext, TranslatableRef } from '@mycelo/septum'
 import module from '../src/index.js'
 import type { CalendarEntry, RadarrApi, SearchResult } from '../src/api.js'
+import { getJson } from '../src/http.js'
 import { parseCalendar } from '../src/parse.js'
 import { startFakeRadarr } from './fake-radarr.js'
 import type { FakeRadarr } from './fake-radarr.js'
@@ -282,6 +283,22 @@ describe('radarr health', () => {
     fake.stop()
     expect(await health()).toMatchObject({ state: 'unreachable' })
   })
+})
+
+describe('the radarr http budget', () => {
+  it('gives up on a host that accepts the connection and never answers', async () => {
+    // Without the AbortSignal every command, and /api/health with them, waits on a socket that will
+    // never speak. `getJson` takes the budget as a parameter, so 50 ms proves the mechanism is wired
+    // without waiting out the 5 s the spore ships.
+    const hanging = Bun.serve({ port: 0, fetch: () => new Promise<Response>(() => undefined) })
+    try {
+      const result = await getJson(hanging.url.origin, {}, 50)
+      expect(result.ok).toBe(false)
+      expect(result.ok ? '' : result.failure).toBe('unreachable')
+    } finally {
+      await hanging.stop(true)
+    }
+  }, 1000)
 })
 
 describe('the radarr spore', () => {

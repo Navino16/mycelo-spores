@@ -63,6 +63,16 @@ const call = (args: Record<string, string> = {}): Invocation =>
 const entry = (title: string, inDays: number, hasFile: boolean): CalendarEntry =>
   ({ title, releaseAt: new Date(Date.now() + inDays * 86_400_000), hasFile })
 
+/**
+ * reply.list's parameter bag is JSON, so the day count and the rendered lines can be read back and
+ * asserted one by one. A substring of the whole reply passes with two lines' parameters transposed.
+ */
+function list(text: string | undefined): { days: unknown, lines: string[] } {
+  const bag = JSON.parse((text ?? '').replace(/^reply\.list\(/, '').replace(/\)$/, '')) as
+    { days: unknown, lines: string }
+  return { days: bag.days, lines: bag.lines.split('\n') }
+}
+
 describe('the upcoming-movies spore', () => {
   it('renders every entry, not just the first', async () => {
     const { ctx, sent } = stub([entry('Dune', 3, false), entry('Arrival', 10, true)])
@@ -76,9 +86,41 @@ describe('the upcoming-movies spore', () => {
   it('distinguishes a film Radarr already holds from one it awaits', async () => {
     const { ctx, sent } = stub([entry('Dune', 3, false), entry('Arrival', 10, true)])
     await module.create().handlers.handleUpcoming(call(), ctx)
-    const text = sent[0]?.text ?? ''
-    expect(text).toContain('reply.awaited')
-    expect(text).toContain('reply.held')
+    const [awaited, held] = list(sent[0]?.text).lines
+    // Per line: with both keys present somewhere in the reply the pair can be swapped.
+    expect(awaited).toContain('reply.awaited(')
+    expect(awaited).toContain('"title":"Dune"')
+    expect(held).toContain('reply.held(')
+    expect(held).toContain('"title":"Arrival"')
+  })
+
+  it('pairs each title with the date of its own release', async () => {
+    const { ctx, sent } = stub([
+      { title: 'Dune', releaseAt: new Date('2026-03-05T12:00:00Z'), hasFile: false },
+      { title: 'Arrival', releaseAt: new Date('2026-04-09T12:00:00Z'), hasFile: true },
+    ])
+    await module.create().handlers.handleUpcoming(call(), ctx)
+    const [dune, arrival] = list(sent[0]?.text).lines
+    // Transposing title and date prints `Mar 5, 2026 — Dune`, which any presence assertion passes.
+    expect(dune).toContain('"title":"Dune"')
+    expect(dune).toContain('"date":"Mar 5, 2026"')
+    expect(arrival).toContain('"title":"Arrival"')
+    expect(arrival).toContain('"date":"Apr 9, 2026"')
+  })
+
+  it('puts each film on its own line', async () => {
+    const { ctx, sent } = stub([entry('Dune', 3, false), entry('Arrival', 10, true)])
+    await module.create().handlers.handleUpcoming(call(), ctx)
+    // join('') would run every film together into one unreadable line.
+    expect(list(sent[0]?.text).lines).toHaveLength(2)
+  })
+
+  it('heads the list with the number of days it actually covered', async () => {
+    const { ctx, sent } = stub([entry('Dune', 3, false)], 30)
+    await module.create().handlers.handleUpcoming(call({ days: '7' }), ctx)
+    // The empty branch's `days` is pinned elsewhere; the one in the heading was not, so /upcoming 7
+    // could announce the next 30 days above seven days of films.
+    expect(list(sent[0]?.text).days).toBe(7)
   })
 
   it('awaits a film with no file and holds one with a file, in that direction', async () => {

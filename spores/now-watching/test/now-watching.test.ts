@@ -58,6 +58,15 @@ const call = (): Invocation => ({ command: 'watching', args: {}, rest: '' }) as 
 const session = (over: Partial<PlexSession> = {}): PlexSession =>
   ({ title: 'Dune', user: 'alice', player: 'phone', progress: 20, paused: false, ...over })
 
+/**
+ * reply.list's parameter bag is JSON, so the rendered lines can be read back and asserted one by
+ * one. A substring of the whole reply passes with two lines' parameters transposed.
+ */
+function rendered(text: string | undefined): string[] {
+  const bag = JSON.parse((text ?? '').replace(/^reply\.list\(/, '').replace(/\)$/, '')) as { lines: string }
+  return bag.lines.split('\n')
+}
+
 describe('the now-watching spore', () => {
   it('reaches plex when jellyfin, the first alternative, is absent', async () => {
     const { ctx, sent } = stub({ plex: [session()] })
@@ -75,11 +84,21 @@ describe('the now-watching spore', () => {
   })
 
   it('distinguishes an episode from a film', async () => {
-    const { ctx, sent } = stub({ plex: [session(), session({ series: 'Game of Thrones' })] })
+    const { ctx, sent } = stub({ plex: [session({ title: 'Dune' }), session({ title: 'The Bells', series: 'Game of Thrones' })] })
     await module.create().handlers.handleWatching(call(), ctx)
-    const text = sent[0]?.text ?? ''
-    expect(text).toContain('reply.plex-film')
-    expect(text).toContain('reply.plex-episode')
+    const [film, episode] = rendered(sent[0]?.text)
+    // Per line, not across the reply: with both keys present somewhere the branch can be inverted.
+    expect(film).toContain('reply.plex-film(')
+    expect(film).toContain('"title":"Dune"')
+    expect(episode).toContain('reply.plex-episode(')
+    expect(episode).toContain('"series":"Game of Thrones"')
+  })
+
+  it('puts each session on its own line', async () => {
+    const { ctx, sent } = stub({ plex: [session({ title: 'Dune' }), session({ title: 'Arrival' })] })
+    await module.create().handlers.handleWatching(call(), ctx)
+    // join('') would run every session together into one unreadable line.
+    expect(rendered(sent[0]?.text)).toHaveLength(2)
   })
 
   it('shows a missing progress as ? rather than as 0 per cent', async () => {
@@ -92,11 +111,12 @@ describe('the now-watching spore', () => {
   it('says a paused session is paused, and a playing one is not', async () => {
     const { ctx, sent } = stub({ plex: [session({ paused: true }), session({ title: 'Arrival' })] })
     await module.create().handlers.handleWatching(call(), ctx)
-    const text = sent[0]?.text ?? ''
+    const [first, second] = rendered(sent[0]?.text)
     // The catalogue drives the wording through an ICU select, so the handler's job is only to pass
-    // the state — and to pass a DIFFERENT one per session (findings §5.1).
-    expect(text).toContain('paused')
-    expect(text).toContain('playing')
+    // the state — and to pass a DIFFERENT one per session (findings §5.1). Asserted per line: with
+    // both words present somewhere in the reply the pair can be swapped.
+    expect(first).toContain('"state":"paused"')
+    expect(second).toContain('"state":"playing"')
   })
 
   it('passes paused for a paused session and playing for a playing one, in that direction', async () => {
@@ -113,11 +133,19 @@ describe('the now-watching spore', () => {
   })
 
   it('names the player, not the user, as the device', async () => {
-    const { ctx, sent } = stub({ plex: [session({ user: 'alice', player: 'living room' })] })
+    const { ctx, sent } = stub({ plex: [
+      session({ user: 'alice', player: 'living room' }),
+      session({ user: 'bob', player: 'kitchen', series: 'Game of Thrones' }),
+    ] })
     await module.create().handlers.handleWatching(call(), ctx)
-    const text = sent[0]?.text ?? ''
-    expect(text).toContain('living room')
-    expect(text).toContain('alice')
+    const [film, episode] = rendered(sent[0]?.text)
+    // The pairing, not the presence: both values survive the two parameters being transposed, and
+    // /watching then prints every person on a device named after themselves. Both branches carry
+    // the same pair and only one of them was pinned.
+    expect(film).toContain('"user":"alice"')
+    expect(film).toContain('"player":"living room"')
+    expect(episode).toContain('"user":"bob"')
+    expect(episode).toContain('"player":"kitchen"')
   })
 
   it('answers the empty case when nobody is watching', async () => {
@@ -136,14 +164,21 @@ describe('the now-watching spore', () => {
     // Unreachable in this deployment: jellyfin is not installed. Written and driven anyway,
     // because a handler hardcoded to plex passes every test that only ever has plex (design §12).
     const { ctx, sent } = stub({
-      jellyfin: [{ title: 'Dune', user: 'alice', device: 'tablet' }],
+      jellyfin: [
+        { title: 'Dune', user: 'alice', device: 'tablet' },
+        { title: 'The Bells', series: 'Game of Thrones', user: 'bob', device: 'tv' },
+      ],
       plex: [session({ title: 'never rendered' })],
     })
     await module.create().handlers.handleWatching(call(), ctx)
-    const text = sent[0]?.text ?? ''
-    expect(text).toContain('reply.jellyfin-film')
-    expect(text).toContain('tablet')
-    expect(text).not.toContain('never rendered')
+    const [film, episode] = rendered(sent[0]?.text)
+    expect(film).toContain('reply.jellyfin-film(')
+    expect(film).toContain('"user":"alice"')
+    expect(film).toContain('"device":"tablet"')
+    expect(episode).toContain('reply.jellyfin-episode(')
+    expect(episode).toContain('"user":"bob"')
+    expect(episode).toContain('"device":"tv"')
+    expect(sent[0]?.text ?? '').not.toContain('never rendered')
   })
 
   it('says so when neither alternative resolved', async () => {

@@ -6,7 +6,7 @@ import { rhizaChecks } from '@mycelo/septum/conformance'
 import type { HealthStatus, Logger, RhizaContext, TranslatableRef } from '@mycelo/septum'
 import module from '../src/index.js'
 import type { PlexApi, PlexSession } from '../src/api.js'
-import { stateFor } from '../src/http.js'
+import { getJson, stateFor } from '../src/http.js'
 import { startFakePlex } from './fake-plex.js'
 import type { FakePlex } from './fake-plex.js'
 
@@ -232,11 +232,34 @@ describe('plex health', () => {
   })
 
   it('maps a failure kind to a state, whichever request produced it', () => {
-    // The sessions-side transport failure — identity answers, then the host dies — cannot be staged
-    // against a single fake server, so the shared map is pinned directly instead.
     expect(stateFor('unreachable')).toBe('unreachable')
     expect(stateFor('unauthorized')).toBe('degraded')
     expect(stateFor('unexpected')).toBe('degraded')
+  })
+
+  it('is unreachable, not degraded, when the host dies after answering identity', async () => {
+    // The second call site of the health map: identity succeeds, so a state hardcoded there is
+    // invisible to every other test. A graceful stop lets the identity response out while refusing
+    // any later connection, and Connection: close stops the next request reusing the socket.
+    const seen: string[] = []
+    const dying = Bun.serve({
+      port: 0,
+      fetch: (request) => {
+        seen.push(new URL(request.url).pathname)
+        void dying.stop()
+        return Response.json({ MediaContainer: { version: '1.41.0' } }, { headers: { Connection: 'close' } })
+      },
+    })
+    try {
+      const rhiza = module.create()
+      await rhiza.start(context(dying.url.origin))
+      const status = await rhiza.health()
+      // /status/sessions never reached the server, so the failure is a transport one.
+      expect(seen).toEqual(['/identity'])
+      expect(status.state).toBe('unreachable')
+    } finally {
+      await dying.stop(true)
+    }
   })
 
   it('is unreachable when identity does not answer', async () => {
@@ -244,6 +267,22 @@ describe('plex health', () => {
     fake.stop()
     expect(await health()).toMatchObject({ state: 'unreachable' })
   })
+})
+
+describe('the plex http budget', () => {
+  it('gives up on a host that accepts the connection and never answers', async () => {
+    // Without the AbortSignal every command, and /api/health with them, waits on a socket that will
+    // never speak. `getJson` takes the budget as a parameter, so 50 ms proves the mechanism is wired
+    // without waiting out the 5 s the spore ships.
+    const hanging = Bun.serve({ port: 0, fetch: () => new Promise<Response>(() => undefined) })
+    try {
+      const result = await getJson(hanging.url.origin, {}, 50)
+      expect(result.ok).toBe(false)
+      expect(result.ok ? '' : result.failure).toBe('unreachable')
+    } finally {
+      await hanging.stop(true)
+    }
+  }, 1000)
 })
 
 describe('the plex spore', () => {
