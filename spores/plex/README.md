@@ -41,13 +41,16 @@ No further `rhiza`. `plex` talks only to the Plex Media Server configured above.
 
 - `healthy` — Plex answered `/identity` and accepted the token on `/status/sessions`, and its
   version is reported.
-- `degraded` — the server answered `/identity` (so the box is on) and then refused the token, or
-  answered something else unexpected, on `/status/sessions`. This state specifically means *the
-  server is reachable and something about the request or the credential is wrong*, distinct from
-  the server being off — which is why `health()` issues two requests: `/identity` needs no token
-  and answers "is the box on", then `/status/sessions` answers "is the credential good".
-- `unreachable` — the box did not answer `/identity` at all: refused connection, DNS failure or
-  timeout.
+- `degraded` — `/identity` succeeded (so the box is on) and `/status/sessions` then did not, for
+  any reason: a refused token, an unexpected response, or even that second request itself failing
+  to answer. Every `/status/sessions` failure reads as `degraded`, never `unreachable` — only
+  `/identity`'s own failure produces that state, which is why `health()` issues two requests:
+  `/identity` needs no token and answers "is the box on", then `/status/sessions` answers "is the
+  credential good".
+- `unreachable` — `/identity` failed for any reason: a refused connection, DNS failure or timeout,
+  but also an answer this spore could not use — a non-JSON body, for instance. Because
+  `/status/sessions` is only tried once `/identity` succeeds, an `/identity` failure is always
+  reported as `unreachable`, even one where the box did technically answer.
 
 **A dead Plex does not make this spore dormant.** It stays germinated and simply reports
 `unreachable` until the box comes back — a temporary outage on Plex's side never takes the rest of

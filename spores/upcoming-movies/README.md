@@ -7,8 +7,9 @@ rendering Radarr's release calendar as a chat reply.
 |---|---|---|
 | `upcoming` | `days` (optional) | The films Radarr expects in the given window, or the operator's `defaultDays` if none is given |
 
-`/upcoming` and `/upcoming 7` are both valid; anything outside 1–365 (including something that is
-not a whole number) answers `usage` rather than guessing what was meant.
+`/upcoming` and `/upcoming 7` are both valid. An argument that starts with no digit at all, or that
+parses to a whole number outside 1–365, answers `usage`; anything else has its leading digits read
+and the rest ignored — `/upcoming 7.5` and `/upcoming 7abc` are both silently read as `7`.
 
 ## Configuration
 
