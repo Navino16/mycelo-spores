@@ -1,0 +1,147 @@
+command:
+  plugins:
+    description: "List installed plugins"
+  whoami:
+    description: "Report your principal and roles"
+  roles:
+    description: "List roles and their command patterns"
+  grant:
+    description: "Give a role to someone on this channel"
+    arg:
+      role:
+        description: "Role name"
+      who:
+        description: "Channel handle of the recipient"
+  revoke:
+    description: "Take a role away from someone on this channel"
+    arg:
+      role:
+        description: "Role name"
+      who:
+        description: "Channel handle"
+  role-new:
+    description: "Create a role with command patterns"
+    arg:
+      name:
+        description: "Role name"
+  plugin-list:
+    description: "List installed plugins and whether they are enabled"
+  plugin-enable:
+    description: "Enable an installed plugin"
+    arg:
+      name:
+        description: "Plugin name"
+  plugin-disable:
+    description: "Disable an installed plugin"
+    arg:
+      name:
+        description: "Plugin name"
+  plugin-set:
+    description: "Set one configuration value on a plugin"
+    arg:
+      name:
+        description: "Plugin name"
+      key:
+        description: "Setting key"
+      value:
+        description: "Setting value"
+  plugin-config:
+    description: "Show a plugin's settings, secrets redacted"
+    arg:
+      name:
+        description: "Plugin name"
+  conversations:
+    description: "List conversations the bot has seen"
+  where-rule:
+    description: "Confine a command pattern to direct messages or to groups"
+    arg:
+      pattern:
+        description: "Command pattern"
+      where:
+        description: "dm or group"
+  broadcast-add:
+    description: "Add a broadcast target"
+    arg:
+      channel:
+        description: "Channel name"
+      conversation:
+        description: "Conversation id"
+  broadcast:
+    description: "Send one message to every configured target"
+    arg:
+      text:
+        description: "What to send"
+  inhibitor-channels:
+    description: "Confine an inhibitor to named channels"
+    arg:
+      name:
+        description: "Inhibitor name"
+  lang:
+    description: "Choose the language the bot answers you in"
+    arg:
+      locale:
+        description: "A language tag, such as en or fr"
+  lang-group:
+    description: "Choose the language this conversation answers in"
+    arg:
+      locale:
+        description: "A language tag, such as en or fr"
+reply:
+  plugins:
+    none: "no plugins are installed"
+    list: "{names}"
+  whoami:
+    text: "{channel}:{externalId} roles: {roles}"
+    no-roles: "none"
+  roles:
+    none: "no roles are configured"
+    list: "{roles}"
+    no-patterns: "none"
+  grant:
+    usage: "usage: /grant '<role>' '<who>'"
+    unknown: "no identity ''{who}'' on channel ''{channel}''"
+    done: "granted ''{role}'' to {who}"
+  revoke:
+    usage: "usage: /revoke '<role>' '<who>'"
+    unknown: "no identity ''{who}'' on channel ''{channel}''"
+    done: "revoked ''{role}'' from {who}"
+  role-new:
+    usage: "usage: /role-new '<name>' [pattern...]"
+    done: "created role ''{name}'' with patterns: {patterns}"
+    no-patterns: "none"
+  plugin-list:
+    none: "no plugins"
+    list: "{lines}"
+    unknown-kind: "unknown"
+  plugin-enable:
+    done: "enabled {name}"
+  plugin-disable:
+    done: "disabled {name}"
+  plugin-set:
+    done: "set {key} on {name}"
+  plugin-config:
+    none: "no settings"
+    list: "{lines}"
+  conversations:
+    none: "no conversations"
+    list: "{lines}"
+  where-rule:
+    usage: "usage: /where-rule '<pattern>' '<dm|group>'"
+    done: "''{pattern}'' is now restricted to {where}"
+  broadcast-add:
+    usage: "usage: /broadcast-add '<channel>' '<conversation>'"
+    done: "added {channel}/{conversation}"
+  broadcast:
+    usage: "usage: /broadcast '<text>'"
+    done: "{ok} ok, {failed} failed"
+  inhibitor-channels:
+    usage: "usage: /inhibitor-channels '<name>' [channel...]"
+    all: "{name} applies to every channel"
+    list: "{name} applies to: {channels}"
+  lang:
+    usage: "usage: /lang '<locale>'"
+    set: "your language is now {locale}"
+  lang-group:
+    usage: "usage: /lang-group '<locale>'"
+    group-only: "lang-group only makes sense in a group"
+    set: "this conversation now answers in {locale}"
