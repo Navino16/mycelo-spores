@@ -49,21 +49,24 @@ One `rhiza`, `mycelium`, with eleven scopes:
 `spore.yaml`'s `septum: "^0.7"` is the **minimum** this plugin needs — not the version it was
 built against. `package.json`'s `@mycelo/septum: "^0.9.0"` is what the workspace actually
 resolves and publishes against; the two ranges answer different questions and are not expected to
-match (`CLAUDE.md`, and seven of eight spores in `mycelo`'s own fixtures do the same).
+match (`CLAUDE.md`). `mycelo`'s own fixtures do the same, more so: of its 11, 10 declare a
+`septum:` range older than the `^0.9.0` their `package.json` resolves.
 
 ## Argument description keys are command-scoped here
 
-Most spores in this registry key an argument's description flatly, `arg.<name>.description`
-(`spores/links`, `spores/upcoming-movies`). That convention does not generalise to this spore:
-`name` alone means *role name* in `role-new` and *plugin name* in three other commands, and a flat
-key would give all four the same description. Every argument here is keyed
-`command.<command>.arg.<name>.description` instead — nothing in the manifest schema enforces
+Of the eight other spores in this registry, only `links` and `upcoming-movies` declare any
+argument at all — the rest declare none, so a flat `arg.<name>.description` convention has never
+had to survive a collision. It cannot survive one here: `name` alone is an argument of **six**
+commands with **three** distinct meanings — the role name in `role-new`, the plugin name in
+`plugin-enable`, `plugin-disable`, `plugin-set` and `plugin-config`, and the inhibitor name in
+`inhibitor-channels`. A flat key would give all six the same description. Every argument here is
+keyed `command.<command>.arg.<name>.description` instead — nothing in the manifest schema enforces
 either convention, since a command's `description` is just a free string the core resolves as a
 catalogue key, so this is a documentation choice, not a validated one.
 
 ## Some diagnostics stay in English
 
-Twelve of the core's own rejections — `role 'x' does not exist`, a plugin's own refusal reason
+Eleven of the core's own rejections — `role 'x' does not exist`, a plugin's own refusal reason
 from `enable()`, a Zod issue array — surface through `(e as Error).message` verbatim, in whatever
 language the mycelium itself writes them in, which today is English. Those are the **mycelium's**
 sentences, not this spore's catalogue: swallowing them and replacing them with a generic failure
@@ -75,9 +78,10 @@ would remove the one piece of information the operator needs. A French-speaking 
 `mycelo`'s own `fixtures/admin` is a test fixture, not a distributed spore, and it is allowed to
 diverge from this one: it declares four scopes this spore does not need
 (`principals.manage`, `messages.send`, `health.read`, `commands.read`), ships a third,
-deliberately incomplete `ru.yaml` to demonstrate the cascade-to-default behaviour, and mixes
-command-scoped and flat argument keys inconsistently. This spore is the one meant for an operator
-to install.
+deliberately incomplete `ru.yaml` to demonstrate the cascade-to-default behaviour, and carries
+**no** command-scoped argument key at all — 17 of its 19 argument descriptions are literal English
+prose and the remaining two (`lang`, `lang-group`) share one flat `arg.locale.description`. This
+spore is the one meant for an operator to install.
 
 ## Compatibility
 

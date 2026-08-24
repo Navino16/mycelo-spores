@@ -114,12 +114,16 @@ reply:
     list: "{lines}"
     unknown-kind: "unknown"
   plugin-enable:
+    usage: "usage: /plugin-enable '<name>'"
     done: "enabled {name}"
   plugin-disable:
+    usage: "usage: /plugin-disable '<name>'"
     done: "disabled {name}"
   plugin-set:
+    usage: "usage: /plugin-set '<name>' '<key>' '<value>'"
     done: "set {key} on {name}"
   plugin-config:
+    usage: "usage: /plugin-config '<name>'"
     none: "no settings"
     list: "{lines}"
   conversations:

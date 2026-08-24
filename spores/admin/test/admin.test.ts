@@ -139,6 +139,32 @@ describe('the admin spore', () => {
     expect(asked).toEqual(['mycelium'])
   })
 
+  it('asks the mycelium rhiza by its declared name at every call site, across all eighteen commands', async () => {
+    // A single call site typo'd to 'myceliun' germinates clean and throws only when that one
+    // command runs (phase 7.5B's whole-branch review, one level down from a missing `requires:`).
+    const { ctx, asked } = stub({ findByIdentity: () => Promise.resolve({ id: 'p2' }) })
+    await handlers.handlePlugins(call('plugins'), ctx)
+    await handlers.handleWhoami(call('whoami'), ctx)
+    await handlers.handleRoles(call('roles'), ctx)
+    await handlers.handleGrant(call('grant', { role: 'guest', who: 'bob' }), ctx)
+    await handlers.handleRevoke(call('revoke', { role: 'guest', who: 'bob' }), ctx)
+    await handlers.handleRoleNew(call('role-new', {}, 'guest media.*'), ctx)
+    await handlers.handlePluginList(call('plugin-list'), ctx)
+    await handlers.handlePluginEnable(call('plugin-enable', { name: 'radarr' }), ctx)
+    await handlers.handlePluginDisable(call('plugin-disable', { name: 'radarr' }), ctx)
+    await handlers.handlePluginSet(call('plugin-set', { name: 'radarr', key: 'port', value: '80' }), ctx)
+    await handlers.handlePluginConfig(call('plugin-config', { name: 'radarr' }), ctx)
+    await handlers.handleConversations(call('conversations'), ctx)
+    await handlers.handleWhereRule(call('where-rule', { pattern: 'admin.*', where: 'dm' }), ctx)
+    await handlers.handleBroadcastAdd(call('broadcast-add', { channel: 'signal', conversation: 'c:1' }), ctx)
+    await handlers.handleBroadcast(call('broadcast', {}, 'hello everyone'), ctx)
+    await handlers.handleInhibitorChannels(call('inhibitor-channels', {}, 'group-gate signal'), ctx)
+    await handlers.handleLang(call('lang', { locale: 'fr' }), ctx)
+    await handlers.handleLangGroup(call('lang-group', { locale: 'fr' }, '', msg({ group: { id: 'g:1', name: 'weekend' } })), ctx)
+    expect(asked.length).toBeGreaterThan(0)
+    expect(new Set(asked)).toEqual(new Set(['mycelium']))
+  })
+
   describe('plugins', () => {
     it('answers the empty case', async () => {
       const { ctx, sent } = stub()
@@ -155,10 +181,13 @@ describe('the admin spore', () => {
   })
 
   describe('whoami', () => {
-    it('reports the sender and their roles', async () => {
+    it('reports channel, externalId and roles as the triple they actually are, not just present somewhere', async () => {
       const { ctx, sent } = stub({}, ['owner', 'guest'])
       await handlers.handleWhoami(call('whoami', {}, '', msg({ sender: { channel: 'console', externalId: 'alice' } })), ctx)
-      expect(sent[0]?.text).toContain('owner, guest')
+      // Presence alone survives a {channel, externalId} swap; the pairing does not.
+      expect(sent[0]?.text).toContain('"channel":"console"')
+      expect(sent[0]?.text).toContain('"externalId":"alice"')
+      expect(sent[0]?.text).toContain('"roles":"owner, guest"')
     })
 
     it('falls back to a translated fallback when the principal holds no role', async () => {
@@ -190,17 +219,20 @@ describe('the admin spore', () => {
       expect(sent[0]?.text).toContain(known('reply.grant.usage'))
     })
 
-    it('names the channel and who when no identity matches', async () => {
+    it('names the channel and who as the pair they actually are, not just present somewhere', async () => {
       const { ctx, sent } = stub()
       await handlers.handleGrant(call('grant', { role: 'guest', who: 'bob' }), ctx)
-      expect(sent[0]?.text).toContain('bob')
-      expect(sent[0]?.text).toContain('console')
+      // Presence alone survives a {who, channel} <-> {channel, who} swap; the pairing does not.
+      expect(sent[0]?.text).toContain('"who":"bob"')
+      expect(sent[0]?.text).toContain('"channel":"console"')
     })
 
-    it('confirms once the mycelium accepts the assignment', async () => {
+    it('confirms the assignment naming the role and who as the pair they actually are', async () => {
       const { ctx, sent } = stub({ findByIdentity: () => Promise.resolve({ id: 'p2' }) })
       await handlers.handleGrant(call('grant', { role: 'guest', who: 'bob' }), ctx)
       expect(sent[0]?.text).toContain(known('reply.grant.done'))
+      expect(sent[0]?.text).toContain('"role":"guest"')
+      expect(sent[0]?.text).toContain('"who":"bob"')
     })
 
     it('surfaces the mycelium’s own diagnostic untranslated rather than a generic failure', async () => {
@@ -214,6 +246,20 @@ describe('the admin spore', () => {
   })
 
   describe('revoke', () => {
+    it('answers its own usage when a required argument is absent, rather than throwing', async () => {
+      const { ctx, sent } = stub()
+      await handlers.handleRevoke(call('revoke', {}), ctx)
+      expect(sent[0]?.text).toContain(known('reply.revoke.usage'))
+    })
+
+    it('names the channel and who as the pair they actually are when no identity matches', async () => {
+      const { ctx, sent } = stub()
+      await handlers.handleRevoke(call('revoke', { role: 'guest', who: 'bob' }), ctx)
+      expect(sent[0]?.text).toContain(known('reply.revoke.unknown'))
+      expect(sent[0]?.text).toContain('"who":"bob"')
+      expect(sent[0]?.text).toContain('"channel":"console"')
+    })
+
     it('confirms once the mycelium accepts the revocation', async () => {
       const { ctx, sent } = stub({ findByIdentity: () => Promise.resolve({ id: 'p2' }) })
       await handlers.handleRevoke(call('revoke', { role: 'guest', who: 'bob' }), ctx)
@@ -228,11 +274,12 @@ describe('the admin spore', () => {
       expect(sent[0]?.text).toContain(known('reply.role-new.usage'))
     })
 
-    it('creates a role with the patterns parsed from rest', async () => {
+    it('creates a role with the name and patterns as the pair they actually are, not just present somewhere', async () => {
       const { ctx, sent } = stub()
       await handlers.handleRoleNew(call('role-new', {}, 'guest media.* help.*'), ctx)
-      expect(sent[0]?.text).toContain('media.*')
-      expect(sent[0]?.text).toContain('help.*')
+      // Presence alone survives a {name, patterns} swap; the pairing does not.
+      expect(sent[0]?.text).toContain('"name":"guest"')
+      expect(sent[0]?.text).toContain('"patterns":"media.*, help.*"')
     })
 
     it('falls back to a translated placeholder with no patterns at all', async () => {
@@ -257,6 +304,13 @@ describe('the admin spore', () => {
   })
 
   describe('plugin-enable / plugin-disable', () => {
+    it('answers its own usage when the name is absent, rather than reaching the mycelium', async () => {
+      const { ctx, sent, asked } = stub()
+      await handlers.handlePluginEnable(call('plugin-enable', {}), ctx)
+      expect(sent[0]?.text).toContain(known('reply.plugin-enable.usage'))
+      expect(asked).toEqual([])
+    })
+
     it('confirms once enabled', async () => {
       const { ctx, sent } = stub()
       await handlers.handlePluginEnable(call('plugin-enable', { name: 'radarr' }), ctx)
@@ -269,6 +323,13 @@ describe('the admin spore', () => {
       expect(sent[0]?.text).toBe('apiKey: Invalid input')
     })
 
+    it('answers its own usage for plugin-disable too, rather than reaching the mycelium', async () => {
+      const { ctx, sent, asked } = stub()
+      await handlers.handlePluginDisable(call('plugin-disable', {}), ctx)
+      expect(sent[0]?.text).toContain(known('reply.plugin-disable.usage'))
+      expect(asked).toEqual([])
+    })
+
     it('confirms once disabled', async () => {
       const { ctx, sent } = stub()
       await handlers.handlePluginDisable(call('plugin-disable', { name: 'radarr' }), ctx)
@@ -277,12 +338,22 @@ describe('the admin spore', () => {
   })
 
   describe('plugin-set', () => {
-    it('coerces a JSON-shaped value before writing it', async () => {
+    it('answers its own usage when any of the three arguments is absent', async () => {
+      const { ctx, sent, asked } = stub()
+      await handlers.handlePluginSet(call('plugin-set', { name: 'radarr', key: 'port' }), ctx)
+      expect(sent[0]?.text).toContain(known('reply.plugin-set.usage'))
+      expect(asked).toEqual([])
+    })
+
+    it('coerces a JSON-shaped value before writing it, naming the key and name as the pair they are', async () => {
       const written: unknown[] = []
       const { ctx, sent } = stub({ setSetting: (_n, _k, v) => { written.push(v); return Promise.resolve() } })
       await handlers.handlePluginSet(call('plugin-set', { name: 'radarr', key: 'port', value: '8080' }), ctx)
       expect(written).toEqual([8080])
       expect(sent[0]?.text).toContain(known('reply.plugin-set.done'))
+      // Presence alone survives a {key, name} swap; the pairing does not.
+      expect(sent[0]?.text).toContain('"key":"port"')
+      expect(sent[0]?.text).toContain('"name":"radarr"')
     })
 
     it('keeps a non-JSON value as a raw string', async () => {
@@ -294,6 +365,13 @@ describe('the admin spore', () => {
   })
 
   describe('plugin-config', () => {
+    it('answers its own usage when the name is absent, rather than reaching the mycelium', async () => {
+      const { ctx, sent, asked } = stub()
+      await handlers.handlePluginConfig(call('plugin-config', {}), ctx)
+      expect(sent[0]?.text).toContain(known('reply.plugin-config.usage'))
+      expect(asked).toEqual([])
+    })
+
     it('answers the empty case', async () => {
       const { ctx, sent } = stub()
       await handlers.handlePluginConfig(call('plugin-config', { name: 'radarr' }), ctx)
@@ -335,10 +413,12 @@ describe('the admin spore', () => {
       expect(sent[0]?.text).toContain(known('reply.where-rule.usage'))
     })
 
-    it('confirms the confinement', async () => {
+    it('confirms the confinement naming the pattern and where as the pair they actually are', async () => {
       const { ctx, sent } = stub()
       await handlers.handleWhereRule(call('where-rule', { pattern: 'admin.*', where: 'dm' }), ctx)
       expect(sent[0]?.text).toContain(known('reply.where-rule.done'))
+      expect(sent[0]?.text).toContain('"pattern":"admin.*"')
+      expect(sent[0]?.text).toContain('"where":"dm"')
     })
   })
 
@@ -349,10 +429,12 @@ describe('the admin spore', () => {
       expect(sent[0]?.text).toContain(known('reply.broadcast-add.usage'))
     })
 
-    it('confirms the added target', async () => {
+    it('confirms the added target naming the channel and conversation as the pair they actually are', async () => {
       const { ctx, sent } = stub()
       await handlers.handleBroadcastAdd(call('broadcast-add', { channel: 'signal', conversation: 'c:1' }), ctx)
       expect(sent[0]?.text).toContain(known('reply.broadcast-add.done'))
+      expect(sent[0]?.text).toContain('"channel":"signal"')
+      expect(sent[0]?.text).toContain('"conversation":"c:1"')
     })
   })
 
@@ -384,11 +466,12 @@ describe('the admin spore', () => {
       expect(sent[0]?.text).toContain(known('reply.inhibitor-channels.all'))
     })
 
-    it('lists every confined channel, not just the last', async () => {
+    it('lists every confined channel under the right name, not just present somewhere', async () => {
       const { ctx, sent } = stub()
       await handlers.handleInhibitorChannels(call('inhibitor-channels', {}, 'group-gate signal console'), ctx)
-      expect(sent[0]?.text).toContain('signal')
-      expect(sent[0]?.text).toContain('console')
+      // Presence alone survives a {name, channels} swap; the pairing does not.
+      expect(sent[0]?.text).toContain('"name":"group-gate"')
+      expect(sent[0]?.text).toContain('"channels":"signal, console"')
     })
   })
 
@@ -409,6 +492,12 @@ describe('the admin spore', () => {
   })
 
   describe('lang-group', () => {
+    it('answers its own usage when the locale argument is absent, rather than throwing', async () => {
+      const { ctx, sent } = stub()
+      await handlers.handleLangGroup(call('lang-group', {}, '', msg({ group: { id: 'g:1', name: 'weekend' } })), ctx)
+      expect(sent[0]?.text).toContain(known('reply.lang-group.usage'))
+    })
+
     it('refuses outside a group', async () => {
       const { ctx, sent } = stub()
       await handlers.handleLangGroup(call('lang-group', { locale: 'fr' }, '', msg({ group: undefined })), ctx)

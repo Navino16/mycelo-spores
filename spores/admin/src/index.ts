@@ -111,8 +111,12 @@ export default {
         })
       },
       handlePluginEnable: async (invocation, ctx) => {
+        const name = invocation.args['name']
+        if (name === undefined) {
+          await ctx.reply({ text: ctx.t('reply.plugin-enable.usage') })
+          return
+        }
         const mycelium = ctx.rhiza<PluginsToggle>('mycelium')
-        const name = invocation.args['name'] ?? ''
         // The refusal reason is what tells the operator what to fix; swallowing it
         // would leave nothing but "failed".
         try {
@@ -123,8 +127,12 @@ export default {
         }
       },
       handlePluginDisable: async (invocation, ctx) => {
+        const name = invocation.args['name']
+        if (name === undefined) {
+          await ctx.reply({ text: ctx.t('reply.plugin-disable.usage') })
+          return
+        }
         const mycelium = ctx.rhiza<PluginsToggle>('mycelium')
-        const name = invocation.args['name'] ?? ''
         try {
           await mycelium.disable(name)
           await ctx.reply({ text: ctx.t('reply.plugin-disable.done', { name }) })
@@ -133,20 +141,29 @@ export default {
         }
       },
       handlePluginSet: async (invocation, ctx) => {
-        const mycelium = ctx.rhiza<PluginsConfigure>('mycelium')
         const { name, key, value } = invocation.args
+        if (name === undefined || key === undefined || value === undefined) {
+          await ctx.reply({ text: ctx.t('reply.plugin-set.usage') })
+          return
+        }
+        const mycelium = ctx.rhiza<PluginsConfigure>('mycelium')
         try {
-          await mycelium.setSetting(name ?? '', key ?? '', coerce(value ?? ''))
-          await ctx.reply({ text: ctx.t('reply.plugin-set.done', { key: key ?? '', name: name ?? '' }) })
+          await mycelium.setSetting(name, key, coerce(value))
+          await ctx.reply({ text: ctx.t('reply.plugin-set.done', { key, name }) })
         } catch (e) {
           await ctx.reply({ text: (e as Error).message })
         }
       },
       handlePluginConfig: async (invocation, ctx) => {
+        const name = invocation.args['name']
+        if (name === undefined) {
+          await ctx.reply({ text: ctx.t('reply.plugin-config.usage') })
+          return
+        }
         const mycelium = ctx.rhiza<PluginsConfigure>('mycelium')
         let settings: Record<string, unknown>
         try {
-          settings = await mycelium.settings(invocation.args['name'] ?? '')
+          settings = await mycelium.settings(name)
         } catch (e) {
           await ctx.reply({ text: (e as Error).message })
           return
