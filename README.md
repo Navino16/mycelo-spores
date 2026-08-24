@@ -29,9 +29,14 @@ Four kinds of plugin live here:
 | [`upcoming-movies`](spores/upcoming-movies) | `enzyme` | `/upcoming` lists the films Radarr expects, and whether it already holds the file | no |
 | [`now-watching`](spores/now-watching) | `enzyme` | `/watching` shows what the house's media server is playing | no |
 
-`help`, `links`, `group-gate` and `signal` need `@mycelo/septum@^0.8.0` and a Mycelo core at phase 7
-or later; `radarr`, `plex`, `upcoming-movies` and `now-watching` need `@mycelo/septum@^0.9.0` and a
-Mycelo core at phase 7.5 or later. Read each spore's own README before installing it.
+Every spore here depends on `@mycelo/septum@^0.9.0`. `help`, `links`, `group-gate` and `signal`
+need a Mycelo core at phase 7 or later; `radarr`, `plex`, `upcoming-movies` and `now-watching` need
+phase 7.5 or later. Read each spore's own README before installing it.
+
+Those first four still declare `septum: "^0.8"` in their `spore.yaml`, and that is deliberate: a
+manifest declares the **minimum contract the plugin needs**, while `package.json` declares what to
+resolve. Under 0.x caret semantics `^0.8.0` excludes `0.9.0`, so a `package.json` saying `^0.8.0`
+would put two copies of septum in the tree.
 
 ## Installing, until phase 8
 

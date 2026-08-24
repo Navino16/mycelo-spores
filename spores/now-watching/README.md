@@ -41,4 +41,4 @@ would leave the requirer dormant while a healthy second sits unused. Both need a
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.9` and a Mycelo core at phase 7.5 or later.
+Needs `@mycelo/septum@^0.9.0` and a Mycelo core at phase 7.5 or later.
