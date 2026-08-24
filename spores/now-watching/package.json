@@ -5,7 +5,9 @@
   "type": "module",
   "license": "MIT",
   "dependencies": {
-    "@mycelo/septum": "^0.9.0",
+    "@mycelo/septum": "^0.9.0"
+  },
+  "devDependencies": {
     "@mycelo/spore-plex": "^0.1.0"
   }
 }
