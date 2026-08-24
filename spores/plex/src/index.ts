@@ -57,11 +57,11 @@ export default {
         const sessions = await get('/status/sessions', withToken())
         if (sessions.ok) {
           const version = versionOf(identity.body)
-          return {
-            state: 'healthy',
-            detail: version === null ? 'reachable' : `Plex ${version}`,
-            checkedAt: new Date(),
-          }
+          // findings §4: /identity always carries a version, so a 200 without one is not the box the
+          // operator thinks answered. Same rule as radarr's system/status.
+          return version === null
+            ? { state: 'degraded', detail: 'identity carried no version', checkedAt: new Date() }
+            : { state: 'healthy', detail: `Plex ${version}`, checkedAt: new Date() }
         }
         return {
           state: stateFor(sessions.failure),
