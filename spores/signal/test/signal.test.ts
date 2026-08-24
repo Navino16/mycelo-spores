@@ -537,4 +537,10 @@ describe('the signal hypha lifecycle', () => {
     })
     expect(failures).toEqual([])
   })
+
+  it('declares the account number as a secret, so it reads back redacted', () => {
+    // A phone number opens no access, but the core redacts on this flag alone: without it
+    // /api/plugins and /plugin-config serve the operator's own number in the clear.
+    expect(module.configSchema.secrets).toEqual(['account'])
+  })
 })

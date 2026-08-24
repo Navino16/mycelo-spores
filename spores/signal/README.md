@@ -54,7 +54,7 @@ z.object({
 | Key | Type | Required | Meaning |
 |---|---|---|---|
 | `socket` | string | yes | Path to the `signal-cli` daemon's unix socket |
-| `account` | string | yes | The bot's own number, in E.164 — the one place a real phone number belongs |
+| `account` | string | yes | The bot's own number, in E.164 — the one place a real phone number belongs. Declared secret, so it reads back as `••••` |
 
 Both are required and neither has a default, so an unconfigured `signal` is **dormant** — it
 germinates and then fails `connect()`. On a **fresh** installation the first synchronisation
