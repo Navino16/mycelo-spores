@@ -59,8 +59,8 @@ export default {
           }))
           return
         }
-        // Unreachable through germination: the any_of group is mandatory, so one alternative always
-        // resolved. Kept because has() is the author's only view of that, and driven by a test.
+        // Rare, not unreachable: the any_of group is mandatory, but the core drops a rhiza that
+        // failed to start() from `resolved`, so has() can answer false for both alternatives.
         await ctx.reply({ text: ctx.t('reply.none') })
       },
     },
