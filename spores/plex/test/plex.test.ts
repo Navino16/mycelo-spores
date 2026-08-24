@@ -6,6 +6,7 @@ import { rhizaChecks } from '@mycelo/septum/conformance'
 import type { HealthStatus, Logger, RhizaContext, TranslatableRef } from '@mycelo/septum'
 import module from '../src/index.js'
 import type { PlexApi, PlexSession } from '../src/api.js'
+import { stateFor } from '../src/http.js'
 import { startFakePlex } from './fake-plex.js'
 import type { FakePlex } from './fake-plex.js'
 
@@ -164,6 +165,28 @@ describe('plex health', () => {
     // or it can no longer answer "is the box on" independently of the credential.
     expect(identity?.accept).toBe('application/json')
     expect(identity?.token).toBeNull()
+  })
+
+  it('is degraded, not unreachable, when identity answers badly', async () => {
+    fake.route('/identity', { status: 500, body: {} })
+    const { health } = await started()
+    // design §4.3: the state follows the failure KIND. A host answering 500 is up and unwell; calling
+    // it unreachable tells the operator to check the box when the box is on.
+    expect(await health()).toMatchObject({ state: 'degraded' })
+  })
+
+  it('is degraded when identity answers a body that is not JSON', async () => {
+    fake.route('/identity', { raw: '<html>hello</html>' })
+    const { health } = await started()
+    expect(await health()).toMatchObject({ state: 'degraded' })
+  })
+
+  it('maps a failure kind to a state, whichever request produced it', () => {
+    // The sessions-side transport failure — identity answers, then the host dies — cannot be staged
+    // against a single fake server, so the shared map is pinned directly instead.
+    expect(stateFor('unreachable')).toBe('unreachable')
+    expect(stateFor('unauthorized')).toBe('degraded')
+    expect(stateFor('unexpected')).toBe('degraded')
   })
 
   it('is unreachable when identity does not answer', async () => {

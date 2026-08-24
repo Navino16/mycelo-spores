@@ -2,7 +2,7 @@ import { defineConfig } from '@mycelo/septum'
 import type { HealthStatus, RhizaContext, RhizaModule, TranslatableRef } from '@mycelo/septum'
 import { z } from 'zod'
 import type { CalendarEntry, RadarrApi, SearchResult } from './api.js'
-import { getJson, refFor } from './http.js'
+import { getJson, refFor, stateFor } from './http.js'
 import type { Fetched } from './http.js'
 import { parseCalendar, parseSearch, versionOf } from './parse.js'
 
@@ -49,7 +49,7 @@ export default {
         const result = await request('/api/v3/system/status')
         if (!result.ok) {
           return {
-            state: result.failure === 'unreachable' ? 'unreachable' : 'degraded',
+            state: stateFor(result.failure),
             detail: result.detail,
             checkedAt: new Date(),
           }

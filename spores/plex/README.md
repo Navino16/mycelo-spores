@@ -41,16 +41,16 @@ No further `rhiza`. `plex` talks only to the Plex Media Server configured above.
 
 - `healthy` — Plex answered `/identity` and accepted the token on `/status/sessions`, and its
   version is reported.
-- `degraded` — `/identity` succeeded (so the box is on) and `/status/sessions` then did not, for
-  any reason: a refused token, an unexpected response, or even that second request itself failing
-  to answer. Every `/status/sessions` failure reads as `degraded`, never `unreachable` — only
-  `/identity`'s own failure produces that state, which is why `health()` issues two requests:
-  `/identity` needs no token and answers "is the box on", then `/status/sessions` answers "is the
-  credential good".
-- `unreachable` — `/identity` failed for any reason: a refused connection, DNS failure or timeout,
-  but also an answer this spore could not use — a non-JSON body, for instance. Because
-  `/status/sessions` is only tried once `/identity` succeeds, an `/identity` failure is always
-  reported as `unreachable`, even one where the box did technically answer.
+- `degraded` — the transport worked but the answer was bad, on either request: a 5xx, a body that
+  is not JSON, or (on `/status/sessions` specifically) a refused token. The box is up; something
+  about the request or the credential is not right. `health()` issues two requests precisely so
+  this can be told apart from the box being off: `/identity` needs no token and answers "is the box
+  on", then `/status/sessions` answers "is the credential good".
+- `unreachable` — the transport itself failed, on either request: a refused connection, a DNS
+  failure or a timeout. The box did not answer at all.
+
+The state follows the **kind** of failure, never which of the two requests produced it — a 500 on
+`/identity` is `degraded`, the same as a 500 on `/status/sessions` would be.
 
 **A dead Plex does not make this spore dormant.** It stays germinated and simply reports
 `unreachable` until the box comes back — a temporary outage on Plex's side never takes the rest of

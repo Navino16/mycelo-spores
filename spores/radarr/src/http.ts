@@ -1,4 +1,4 @@
-import type { TranslatableRef } from '@mycelo/septum'
+import type { HealthState, TranslatableRef } from '@mycelo/septum'
 
 export type FailureKind = 'unreachable' | 'unauthorized' | 'unexpected'
 
@@ -41,6 +41,13 @@ const KEYS: Record<FailureKind, string> = {
   unauthorized: 'error.unauthorized',
   unexpected: 'error.unexpected',
 }
+
+/**
+ * design §4.3: `unreachable` is a transport failure, `degraded` is a host that answered and is
+ * unwell. The state follows the failure kind, never which request produced it.
+ */
+export const stateFor = (failure: FailureKind): HealthState =>
+  (failure === 'unreachable' ? 'unreachable' : 'degraded')
 
 /** A rhiza has no reader and cannot translate, so it names the message (design §4.1). */
 export const refFor = (failure: FailureKind, detail: string): TranslatableRef =>

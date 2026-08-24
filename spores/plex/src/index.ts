@@ -2,7 +2,7 @@ import { defineConfig } from '@mycelo/septum'
 import type { HealthStatus, RhizaContext, RhizaModule, TranslatableRef } from '@mycelo/septum'
 import { z } from 'zod'
 import type { PlexApi, PlexSession } from './api.js'
-import { getJson, refFor } from './http.js'
+import { getJson, refFor, stateFor } from './http.js'
 import type { Fetched } from './http.js'
 import { parseSessions, versionOf } from './parse.js'
 
@@ -48,9 +48,12 @@ export default {
         if (ctx === null) return { state: 'unreachable', detail: 'not started', checkedAt: new Date() }
         // design §4.3 claims a bad token is distinguishable from a dead host; one request cannot do
         // it. /identity needs no token, so it answers "is the box on", and /status/sessions then
-        // answers "is the credential good".
+        // answers "is the credential good". Both go through stateFor: a host answering 500 on
+        // /identity is up and unwell, not unreachable.
         const identity = await get('/identity', {})
-        if (!identity.ok) return { state: 'unreachable', detail: identity.detail, checkedAt: new Date() }
+        if (!identity.ok) {
+          return { state: stateFor(identity.failure), detail: identity.detail, checkedAt: new Date() }
+        }
         const sessions = await get('/status/sessions', withToken())
         if (sessions.ok) {
           const version = versionOf(identity.body)
@@ -61,7 +64,7 @@ export default {
           }
         }
         return {
-          state: 'degraded',
+          state: stateFor(sessions.failure),
           detail: sessions.failure === 'unauthorized' ? `token rejected (${sessions.detail})` : sessions.detail,
           checkedAt: new Date(),
         }
