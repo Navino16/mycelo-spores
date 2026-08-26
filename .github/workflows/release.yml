@@ -1,0 +1,56 @@
+name: release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    # Releases are tagged `<spore>@<semver>`. Anything else in this repository is not a
+    # spore release and must not attach an asset.
+    if: contains(github.event.release.tag_name, '@')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - run: bun install --frozen-lockfile
+      - run: bun run ci
+
+      # The tag decides what ships. Bundling whatever package.json happens to hold
+      # would ship the wrong strain, or attach an asset to the wrong release.
+      - name: Resolve the spore from the tag
+        id: target
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          name="${TAG%@*}"
+          strain="${TAG##*@}"
+          dir="$(bun tools/locate.ts "$name")"
+          actual="$(bun -e "console.log(JSON.parse(await Bun.file('$dir/package.json').text()).version)")"
+          if [ "$actual" != "$strain" ]; then
+            echo "::error::tag says $strain, $name declares $actual"
+            exit 1
+          fi
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          echo "asset=$name-$strain.tgz" >> "$GITHUB_OUTPUT"
+
+      - name: Build the bundle
+        env:
+          DIR: ${{ steps.target.outputs.dir }}
+        run: bun run bundle -- "$DIR" dist
+
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+          ASSET: ${{ steps.target.outputs.asset }}
+        run: gh release upload "$TAG" "dist/$ASSET" --clobber

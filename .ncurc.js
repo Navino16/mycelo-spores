@@ -1,7 +1,8 @@
 // Configuration for npm-check-updates.
 //
-// Three entries are rejected for two reasons: the typescript-eslint peer range and
-// the Bun runtime pin. Raising either breaks something no version checker can see.
+// Four entries are rejected for three reasons: the typescript-eslint peer range, the
+// Bun runtime pin, and the release path's pinned tooling. Raising any of them breaks
+// something no version checker can see.
 export default {
   reject: [
     // typescript-eslint peers `typescript@">=4.8.4 <6.1.0"`, so TypeScript 7 means
@@ -12,5 +13,8 @@ export default {
     // the runtime does not have: the compiler accepts the code and it crashes.
     '@types/bun',
     'bun-types',
+
+    // Pinned exactly: the release path must not take an unreviewed minor bump.
+    '@changesets/cli',
   ],
 }
