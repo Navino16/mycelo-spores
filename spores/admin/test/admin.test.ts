@@ -505,6 +505,12 @@ describe('the admin spore', () => {
       expect(sent[0]?.text).toContain('"channel":"signal"')
       expect(sent[0]?.text).toContain('"conversation":"c:1"')
     })
+
+    it('surfaces the mycelium’s own diagnostic untranslated rather than a generic failure', async () => {
+      const { ctx, sent } = stub({ addBroadcastTarget: () => Promise.reject(new Error('boom')) })
+      await handlers.handleBroadcastAdd(call('broadcast-add', { channel: 'signal', conversation: 'c:1' }), ctx)
+      expect(sent[0]?.text).toBe('boom')
+    })
   })
 
   describe('broadcast', () => {
@@ -519,6 +525,12 @@ describe('the admin spore', () => {
       await handlers.handleBroadcast(call('broadcast', {}, 'hello everyone'), ctx)
       expect(sent[0]?.text).toContain('"ok":"2"')
       expect(sent[0]?.text).toContain('"failed":"1"')
+    })
+
+    it('surfaces the mycelium’s own diagnostic untranslated rather than a generic failure', async () => {
+      const { ctx, sent } = stub({ broadcast: () => Promise.reject(new Error('boom')) })
+      await handlers.handleBroadcast(call('broadcast', {}, 'hello everyone'), ctx)
+      expect(sent[0]?.text).toBe('boom')
     })
   })
 
@@ -756,5 +768,18 @@ describe('the admin spore', () => {
       context: () => stub().ctx,
     })
     expect(failures).toEqual([])
+  })
+
+  it('resolves every argument description the manifest names, in every shipped locale', () => {
+    // `enzymeChecks` only reads `commands[].description` (I1/I4): a typo'd or deleted
+    // `arg.*.description` key passes conformance and reaches `/help` as the literal key.
+    const manifest = parseYaml(readFileSync(join(here, 'spore.yaml'), 'utf8')) as {
+      commands?: readonly { args?: readonly { description?: string }[] }[]
+    }
+    const argKeys = (manifest.commands ?? []).flatMap((c) => c.args ?? [])
+      .map((a) => a.description)
+      .filter((d): d is string => d !== undefined)
+    expect(argKeys.length).toBeGreaterThan(0)
+    for (const key of argKeys) assertReadsExactly(known(key), {})
   })
 })
