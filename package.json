@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "bun test",
+    "bundle": "bun tools/bundle.ts",
     "ci": "bun run lint && bun run typecheck && bun run test",
     "changeset": "changeset"
   },
