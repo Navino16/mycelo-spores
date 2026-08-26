@@ -2,4 +2,4 @@
 "@mycelo/spore-help": patch
 ---
 
-No functional change: proves the changeset gate in both directions.
+No functional change. Documentation formatting only.
