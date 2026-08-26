@@ -46,12 +46,14 @@ One `rhiza`, `mycelium`, with eleven scopes:
 | `restrictions.manage` | `where-rule`, `broadcast-add`, `inhibitor-channels` |
 | `locale.manage` | `lang`, `lang-group` |
 
-`spore.yaml`'s `septum: "^0.7"` is the **minimum** this plugin needs — not the version it was
+`spore.yaml`'s `septum: "^0.10"` is the **minimum** this plugin needs — not the version it was
 built against. `package.json`'s `@mycelo/septum: "^0.10.1"` is what the workspace actually
-resolves and publishes against; the two ranges answer different questions and are not expected to
-match (`CLAUDE.md`). `mycelo`'s own fixtures do the same, more so: of its 11, 10 carry a
-`package.json` resolving `^0.10.0`, and all 11 manifests declare an older range
-(6×`^0.5`, 2×`^0.7`, 2×`^0.8`, 1×`^0.9`).
+resolves and publishes against; the two ranges answer different questions and happen to agree here
+only because `admin` uses something `0.10` added, so its true minimum and its resolved version are
+the same value (`CLAUDE.md`). `mycelo`'s own fixtures still diverge, for the opposite reason: of
+its 11, 10 carry a `package.json` resolving `^0.10.0`, and all 11 manifests declare an older range
+(6×`^0.5`, 2×`^0.7`, 2×`^0.8`, 1×`^0.9`), because none of those fixtures needs anything past that
+point.
 
 ## Argument description keys are command-scoped here
 
