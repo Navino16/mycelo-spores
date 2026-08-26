@@ -14,19 +14,18 @@ jobs:
     if: contains(github.event.release.tag_name, '@')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.release.tag_name }}
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
 
       - run: bun install --frozen-lockfile
-      - run: bun run ci
 
-      # The tag decides what ships. Bundling whatever package.json happens to hold
-      # would ship the wrong strain, or attach an asset to the wrong release.
+      # The release is already published by the time this workflow runs, so a mis-cut tag must
+      # fail here, in seconds, rather than after the ~25s `bun run ci` below.
       - name: Resolve the spore from the tag
         id: target
         env:
@@ -42,6 +41,8 @@ jobs:
           fi
           echo "dir=$dir" >> "$GITHUB_OUTPUT"
           echo "asset=$name-$strain.tgz" >> "$GITHUB_OUTPUT"
+
+      - run: bun run ci
 
       - name: Build the bundle
         env:
