@@ -1,6 +1,6 @@
 {
   "name": "@mycelo/spore-now-watching",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "type": "module",
   "license": "MIT",
@@ -8,6 +8,6 @@
     "@mycelo/septum": "^0.10.1"
   },
   "devDependencies": {
-    "@mycelo/spore-plex": "^0.1.0"
+    "@mycelo/spore-plex": "^0.2.0"
   }
 }
