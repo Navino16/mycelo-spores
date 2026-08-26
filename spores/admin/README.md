@@ -47,10 +47,11 @@ One `rhiza`, `mycelium`, with eleven scopes:
 | `locale.manage` | `lang`, `lang-group` |
 
 `spore.yaml`'s `septum: "^0.7"` is the **minimum** this plugin needs — not the version it was
-built against. `package.json`'s `@mycelo/septum: "^0.9.0"` is what the workspace actually
+built against. `package.json`'s `@mycelo/septum: "^0.10.0"` is what the workspace actually
 resolves and publishes against; the two ranges answer different questions and are not expected to
-match (`CLAUDE.md`). `mycelo`'s own fixtures do the same, more so: of its 11, 10 declare a
-`septum:` range older than the `^0.9.0` their `package.json` resolves.
+match (`CLAUDE.md`). `mycelo`'s own fixtures do the same, more so: of its 11, 10 carry a
+`package.json` resolving `^0.10.0`, and all 11 manifests declare an older range
+(6×`^0.5`, 2×`^0.7`, 2×`^0.8`, 1×`^0.9`).
 
 ## Argument description keys are command-scoped here
 
@@ -66,7 +67,7 @@ catalogue key, so this is a documentation choice, not a validated one.
 
 ## Some diagnostics stay in English
 
-Eleven of the core's own rejections — `role 'x' does not exist`, a plugin's own refusal reason
+Thirteen of the core's own rejections — `role 'x' does not exist`, a plugin's own refusal reason
 from `enable()`, a Zod issue array — surface through `(e as Error).message` verbatim, in whatever
 language the mycelium itself writes them in, which today is English. Those are the **mycelium's**
 sentences, not this spore's catalogue: swallowing them and replacing them with a generic failure
@@ -85,4 +86,4 @@ spore is the one meant for an operator to install.
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.9.0` and a Mycelo core at phase 7 or later.
+Needs `@mycelo/septum@^0.10.0` and a Mycelo core at phase 7 or later.

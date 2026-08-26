@@ -62,4 +62,4 @@ the bot with it.
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.9.0` and a Mycelo core at phase 7.5 or later.
+Needs `@mycelo/septum@^0.10.0` and a Mycelo core at phase 7.5 or later.

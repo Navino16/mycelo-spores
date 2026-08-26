@@ -118,5 +118,5 @@ Mycelo).
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.9.0` and a Mycelo core at phase 7 or later. Measured against
+Needs `@mycelo/septum@^0.10.0` and a Mycelo core at phase 7 or later. Measured against
 `signal-cli 0.14.7+morph027+1`.
