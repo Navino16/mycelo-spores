@@ -47,7 +47,7 @@ One `rhiza`, `mycelium`, with eleven scopes:
 | `locale.manage` | `lang`, `lang-group` |
 
 `spore.yaml`'s `septum: "^0.7"` is the **minimum** this plugin needs — not the version it was
-built against. `package.json`'s `@mycelo/septum: "^0.10.0"` is what the workspace actually
+built against. `package.json`'s `@mycelo/septum: "^0.10.1"` is what the workspace actually
 resolves and publishes against; the two ranges answer different questions and are not expected to
 match (`CLAUDE.md`). `mycelo`'s own fixtures do the same, more so: of its 11, 10 carry a
 `package.json` resolving `^0.10.0`, and all 11 manifests declare an older range
@@ -86,4 +86,4 @@ spore is the one meant for an operator to install.
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.10.0` and a Mycelo core at phase 7 or later.
+Needs `@mycelo/septum@^0.10.1` and a Mycelo core at phase 7 or later.

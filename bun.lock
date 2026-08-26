@@ -17,14 +17,14 @@
       "name": "@mycelo/spore-admin",
       "version": "0.1.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.0",
+        "@mycelo/septum": "^0.10.1",
       },
     },
     "spores/group-gate": {
       "name": "@mycelo/spore-group-gate",
       "version": "0.1.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.0",
+        "@mycelo/septum": "^0.10.1",
         "zod": "^4.4.3",
       },
     },
@@ -32,14 +32,14 @@
       "name": "@mycelo/spore-help",
       "version": "0.1.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.0",
+        "@mycelo/septum": "^0.10.1",
       },
     },
     "spores/links": {
       "name": "@mycelo/spore-links",
       "version": "0.1.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.0",
+        "@mycelo/septum": "^0.10.1",
         "zod": "^4.4.3",
       },
     },
@@ -47,7 +47,7 @@
       "name": "@mycelo/spore-now-watching",
       "version": "0.1.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.0",
+        "@mycelo/septum": "^0.10.1",
       },
       "devDependencies": {
         "@mycelo/spore-plex": "^0.1.0",
@@ -57,7 +57,7 @@
       "name": "@mycelo/spore-plex",
       "version": "0.1.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.0",
+        "@mycelo/septum": "^0.10.1",
         "zod": "^4.4.3",
       },
     },
@@ -65,7 +65,7 @@
       "name": "@mycelo/spore-radarr",
       "version": "0.1.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.0",
+        "@mycelo/septum": "^0.10.1",
         "zod": "^4.4.3",
       },
     },
@@ -73,7 +73,7 @@
       "name": "@mycelo/spore-signal",
       "version": "0.1.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.0",
+        "@mycelo/septum": "^0.10.1",
         "zod": "^4.4.3",
       },
     },
@@ -81,7 +81,7 @@
       "name": "@mycelo/spore-upcoming-movies",
       "version": "0.1.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.0",
+        "@mycelo/septum": "^0.10.1",
         "zod": "^4.4.3",
       },
       "devDependencies": {
@@ -120,7 +120,7 @@
 
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
 
-    "@mycelo/septum": ["@mycelo/septum@0.10.0", "", { "dependencies": { "intl-messageformat": "^11.2.13", "zod": "^4.4.3" } }, "sha512-4tscLM9XB2br+VMC2NmWoekupJNJnhhUrerYTDJCmdp6naXwg9kAKUDhEEO+EtmRCKeGX1Dql8f1WkHsOzNEwg=="],
+    "@mycelo/septum": ["@mycelo/septum@0.10.1", "", { "dependencies": { "intl-messageformat": "^11.2.13", "zod": "^4.4.3" } }, "sha512-1T3Ra9wg+UykDFYOEfNwhGnonp192yBc76LaW26XZDGCfZGiHsdfpD+BLodCDQQrkzVRoc6Bkykmg0d3qnH74Q=="],
 
     "@mycelo/spore-admin": ["@mycelo/spore-admin@workspace:spores/admin"],
 

@@ -30,7 +30,7 @@ Four kinds of plugin live here:
 | [`upcoming-movies`](spores/upcoming-movies) | `enzyme` | `/upcoming` lists the films Radarr expects, and whether it already holds the file | no |
 | [`now-watching`](spores/now-watching) | `enzyme` | `/watching` shows what the house's media server is playing | no |
 
-Every spore here depends on `@mycelo/septum@^0.10.0`. `admin`, `help`, `links`, `group-gate` and
+Every spore here depends on `@mycelo/septum@^0.10.1`. `admin`, `help`, `links`, `group-gate` and
 `signal` need a Mycelo core at phase 7 or later; `radarr`, `plex`, `upcoming-movies` and
 `now-watching` need phase 7.5 or later. Read each spore's own README before installing it.
 

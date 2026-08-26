@@ -21,5 +21,5 @@ None. `help` takes no settings.
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.10.0` and a Mycelo core at phase 7 or later, where `commands.read` and
+Needs `@mycelo/septum@^0.10.1` and a Mycelo core at phase 7 or later, where `commands.read` and
 `EnzymeContext.locale` were introduced.
