@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parse } from 'yaml'
 
@@ -8,7 +8,10 @@ const SPORES = join(import.meta.dirname, '../spores')
 export function locate(name: string, root: string = SPORES): string {
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
-    const raw: unknown = parse(readFileSync(join(root, entry.name, 'spore.yaml'), 'utf8'))
+    const manifest = join(root, entry.name, 'spore.yaml')
+    // Scaffolding or a template directory under `spores/` carries no manifest at all.
+    if (!existsSync(manifest)) continue
+    const raw: unknown = parse(readFileSync(manifest, 'utf8'))
     if ((raw as { name?: unknown }).name === name) return join(root, entry.name)
   }
   throw new Error(`no spore declares the name '${name}'`)

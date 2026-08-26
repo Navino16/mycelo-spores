@@ -16,4 +16,9 @@ describe('locate', () => {
   it('returns the directory, not the name, when they differ', () => {
     expect(locate('renamed-spore', FIXTURES)).toBe(join(FIXTURES, 'mismatched-dir'))
   })
+
+  it('skips a directory with no spore.yaml instead of throwing ENOENT', () => {
+    const root = join(FIXTURES, 'no-manifest-root')
+    expect(() => locate('nonesuch', root)).toThrow(/no spore declares the name/)
+  })
 })
