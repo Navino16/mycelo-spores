@@ -28,3 +28,23 @@ jobs:
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run test
+
+  changeset:
+    # Only a pull request has a base to compare against, and the gate exists to make a
+    # contributor declare their version impact where a reviewer sees it (design §3.1).
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # --since needs the base branch present. checkout defaults to depth 1, which
+          # leaves `develop` unresolvable and the gate silently passing.
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run changeset -- status --since=origin/${{ github.base_ref }}
