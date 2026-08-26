@@ -23,3 +23,4 @@ None. `help` takes no settings.
 
 Needs `@mycelo/septum@^0.10.1` and a Mycelo core at phase 7 or later, where `commands.read` and
 `EnzymeContext.locale` were introduced.
+
