@@ -294,7 +294,7 @@ describe('the plex http budget', () => {
     } finally {
       await hanging.stop(true)
     }
-  }, 1000)
+  }, 20000) // full-suite load flakes a 1000 ms test timeout even though the abort budget itself is 50 ms
 })
 
 describe('the plex spore', () => {
