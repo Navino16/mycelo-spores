@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint'
 export default defineConfig(
   // .superpowers/ is the gitignored SDD workspace: scratch .ts files live there, outside every
   // tsconfig include, and globalIgnores does not read .gitignore.
-  globalIgnores(['**/node_modules/**', '.superpowers/**']),
+  globalIgnores(['**/node_modules/**', '.superpowers/**', 'dist/**']),
   tseslint.configs.recommendedTypeChecked,
   {
     files: ['**/*.ts'],
