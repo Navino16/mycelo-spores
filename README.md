@@ -34,11 +34,12 @@ Every spore here depends on `@mycelo/septum@^0.10.1`. `admin`, `help`, `links`, 
 `signal` need a Mycelo core at phase 7 or later; `radarr`, `plex`, `upcoming-movies` and
 `now-watching` need phase 7.5 or later. Read each spore's own README before installing it.
 
-Those five still declare an older `septum:` range in their `spore.yaml`, and that is deliberate: a
-manifest declares the **minimum contract the plugin needs**, while `package.json` declares what to
-resolve — `help`, `links`, `group-gate` and `signal` at `^0.8`, `admin` at `^0.7`. Under 0.x caret
-semantics `^0.8.0` excludes `0.10.0`, so a `package.json` saying `^0.8.0` would put two copies of
-septum in the tree.
+Every manifest here declares `septum: "^0.10"`, matching `package.json`'s `^0.10.1`. That is not
+incidental: under 0.x caret semantics a range below 1.0 is bounded, not an open floor, so a
+manifest declaring `^0.8` **excludes** `0.10.0` — the earlier ranges (`^0.5` through `^0.9`) were
+wrong the moment any of these spores used something `0.10` added, which every one of them does.
+`spore.yaml` still states the minimum the plugin needs and `package.json` states what the
+workspace resolves; the two are free to diverge in general, they just don't for anything here.
 
 ## Installing, until phase 8
 
@@ -62,6 +63,29 @@ auto-enable applies to them — but the failure they produce is a different one.
 make its dependent command vanish with no explanation: an unconfigured `radarr` takes `/upcoming`
 with it, because `upcoming-movies` requires that rhiza; an unconfigured `plex` takes `/watching`
 with it the same way, through `now-watching`'s `any_of`.
+
+## Releasing
+
+1. A release starts by merging a pull request carrying a changeset — write one with
+   `bun run changeset`.
+2. `bun run changeset -- version` bumps the affected spores and writes their `CHANGELOG.md`.
+3. **That version pull request needs `bun run changeset -- add --empty`, or the `changeset` CI job
+   fails it** — versioning is what removes the changesets, so the PR that applies it has none by
+   construction.
+4. **The version pull request must be merged into `develop` before any tag is pushed.**
+   `release.yml` triggers on `release: published`, and a `release`-triggered workflow only runs
+   from the repository's default branch — `develop` here. Tag first and the release is published
+   with no workflow able to attach an asset.
+5. Tags are `<manifest-name>@<semver>` and are **GPG-signed by a human**; the release workflow
+   reacts to the published GitHub release, it does not create one.
+
+Two contributor traps:
+
+- A change touching a spore needs a changeset, or CI refuses the pull request — run
+  `bun run changeset -- add --empty` if the change needs no release.
+- **An untracked changeset file is invisible** to `changeset status`, because `@changesets/git`
+  reads `git diff` — a contributor who forgets `git add` sees the same error as having written no
+  changeset at all.
 
 Contributing guidelines and the plugin authoring guide will land with the core's
 documentation phase.
