@@ -202,8 +202,13 @@ export default {
           await ctx.reply({ text: ctx.t('reply.broadcast-add.usage') })
           return
         }
-        await ctx.rhiza<RestrictionsManage>('mycelium')
-          .addBroadcastTarget({ channel, conversationId: conversation })
+        try {
+          await ctx.rhiza<RestrictionsManage>('mycelium')
+            .addBroadcastTarget({ channel, conversationId: conversation })
+        } catch (e) {
+          await ctx.reply({ text: (e as Error).message })
+          return
+        }
         await ctx.reply({ text: ctx.t('reply.broadcast-add.done', { channel, conversation }) })
       },
       handleBroadcast: async (invocation, ctx) => {
@@ -212,7 +217,13 @@ export default {
           await ctx.reply({ text: ctx.t('reply.broadcast.usage') })
           return
         }
-        const results = await ctx.rhiza<MessagesBroadcast>('mycelium').broadcast({ text })
+        let results: readonly { ok: boolean }[]
+        try {
+          results = await ctx.rhiza<MessagesBroadcast>('mycelium').broadcast({ text })
+        } catch (e) {
+          await ctx.reply({ text: (e as Error).message })
+          return
+        }
         const ok = results.filter((r) => r.ok).length
         await ctx.reply({
           text: ctx.t('reply.broadcast.done', { ok: String(ok), failed: String(results.length - ok) }),
