@@ -5,7 +5,7 @@ The public plugin registry — the default `sporangium` — for
 
 A `spore` is a distributable Mycelo plugin. This repository holds plugin **sources**;
 build output is never committed. Each release is published as a self-contained bundle
-attached to a tag of the form `<plugin>@<semver>`.
+attached to a tag of the form `<manifest-name>@<semver>`.
 
 Four kinds of plugin live here:
 
@@ -36,14 +36,17 @@ Every spore here depends on `@mycelo/septum@^0.10.1`. `admin`, `help`, `links`, 
 
 Every manifest here declares `septum: "^0.10"`, matching `package.json`'s `^0.10.1`. That is not
 incidental: under 0.x caret semantics a range below 1.0 is bounded, not an open floor, so a
-manifest declaring `^0.8` **excludes** `0.10.0` — the earlier ranges (`^0.5` through `^0.9`) were
-wrong the moment any of these spores used something `0.10` added, which every one of them does.
+manifest declaring `^0.8` **excludes** `0.10.0` outright — the earlier ranges (`^0.7` through
+`^0.9`) were wrong the moment `package.json` resolved `0.10.1`, regardless of which `0.10` feature,
+if any, a given spore actually uses.
 `spore.yaml` still states the minimum the plugin needs and `package.json` states what the
 workspace resolves; the two are free to diverge in general, they just don't for anything here.
 
 ## Installing, until phase 8
 
-Release automation arrives with phase 8 and its mechanism is not yet decided, so a spore is
+How a spore is *released* is decided and is half-built already, on this branch — see Releasing,
+below. How a spore is *installed* into a running Mycelo is not: `inoculate` and the registry
+drivers that consume a release are phase 8 work, still unwritten. Until they land, a spore is
 installed today by pointing `mycelo.yaml`'s `spores:` at a directory holding it.
 
 **Do not point it at this repository's whole `spores/` directory on a fresh Mycelo.** `group-gate`
@@ -72,12 +75,16 @@ with it the same way, through `now-watching`'s `any_of`.
 3. **That version pull request needs `bun run changeset -- add --empty`, or the `changeset` CI job
    fails it** — versioning is what removes the changesets, so the PR that applies it has none by
    construction.
-4. **The version pull request must be merged into `develop` before any tag is pushed.**
-   `release.yml` triggers on `release: published`, and a `release`-triggered workflow only runs
-   from the repository's default branch — `develop` here. Tag first and the release is published
-   with no workflow able to attach an asset.
+4. **The version pull request must be merged into `develop` before any tag is pushed.** This
+   repository squash-merges every pull request, so a branch commit does not survive the merge — it
+   is replaced by one squashed commit on `develop`. A tag pushed before merging points at a commit
+   that will never be on `develop`, and `release.yml`'s `checkout` with `ref: <tag>` would then
+   build from a commit that no longer belongs to the branch it was released from.
 5. Tags are `<manifest-name>@<semver>` and are **GPG-signed by a human**; the release workflow
    reacts to the published GitHub release, it does not create one.
+6. Publish the release from that tag — this is the step that triggers `release.yml`:
+   `gh release create <manifest-name>@<semver> --verify-tag --title <manifest-name>@<semver>
+   --notes-file spores/<dir>/CHANGELOG.md`.
 
 Two contributor traps:
 
