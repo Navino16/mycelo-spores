@@ -20,6 +20,7 @@ Four kinds of plugin live here:
 
 | Spore | Kind | What it does | Needs configuring |
 |---|---|---|---|
+| [`admin`](spores/admin) | `enzyme` | Eighteen commands administering plugins, roles, conversations, broadcast targets, restrictions and locales | no |
 | [`help`](spores/help) | `enzyme` | `/help` lists the commands the caller is authorized to invoke, described in their own language | no |
 | [`links`](spores/links) | `enzyme` | `/links` and `/link <label>` answer with the house's own service URLs | yes, but it answers "none configured" until you do |
 | [`group-gate`](spores/group-gate) | `inhibitor` | Admits only members of a group the channel itself holds — a real Signal group, not a duplicated allowlist | **yes, before its first boot** |
@@ -29,14 +30,15 @@ Four kinds of plugin live here:
 | [`upcoming-movies`](spores/upcoming-movies) | `enzyme` | `/upcoming` lists the films Radarr expects, and whether it already holds the file | no |
 | [`now-watching`](spores/now-watching) | `enzyme` | `/watching` shows what the house's media server is playing | no |
 
-Every spore here depends on `@mycelo/septum@^0.9.0`. `help`, `links`, `group-gate` and `signal`
-need a Mycelo core at phase 7 or later; `radarr`, `plex`, `upcoming-movies` and `now-watching` need
-phase 7.5 or later. Read each spore's own README before installing it.
+Every spore here depends on `@mycelo/septum@^0.10.1`. `admin`, `help`, `links`, `group-gate` and
+`signal` need a Mycelo core at phase 7 or later; `radarr`, `plex`, `upcoming-movies` and
+`now-watching` need phase 7.5 or later. Read each spore's own README before installing it.
 
-Those first four still declare `septum: "^0.8"` in their `spore.yaml`, and that is deliberate: a
+Those five still declare an older `septum:` range in their `spore.yaml`, and that is deliberate: a
 manifest declares the **minimum contract the plugin needs**, while `package.json` declares what to
-resolve. Under 0.x caret semantics `^0.8.0` excludes `0.9.0`, so a `package.json` saying `^0.8.0`
-would put two copies of septum in the tree.
+resolve — `help`, `links`, `group-gate` and `signal` at `^0.8`, `admin` at `^0.7`. Under 0.x caret
+semantics `^0.8.0` excludes `0.10.0`, so a `package.json` saying `^0.8.0` would put two copies of
+septum in the tree.
 
 ## Installing, until phase 8
 

@@ -1,6 +1,10 @@
 reply:
   list: "commandes :\n{lines}"
   line: "{name} — {description}"
+  lineWithArgs: "{name} — {description}\n{args}"
+  arg: "  {name} ({state}) : {description}"
+  argRequired: "obligatoire"
+  argOptional: "optionnel"
   none: "vous n'êtes autorisé à utiliser aucune commande"
 command:
   help:

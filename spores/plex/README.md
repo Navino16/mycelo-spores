@@ -4,8 +4,8 @@ A `rhiza` spore for [Mycelo](https://github.com/Navino16/mycelo). Wraps a Plex M
 API, **read only**: it reads the current sessions, and it never writes anything back — nothing is
 ever paused, stopped or changed on the server.
 
-When nobody is watching, `sessions()` answers an empty list; that shape is inferred from how Plex
-reports an empty container elsewhere, not measured directly, and the milestone is what confirms it.
+When nobody is watching, `sessions()` answers an empty list. The shape—`{MediaContainer:{size:0}}` with
+no `Metadata` key—was measured on 2026-08-24 by condition-paced polling when nobody was active.
 
 ## Configuration
 
@@ -62,4 +62,4 @@ the bot with it.
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.9.0` and a Mycelo core at phase 7.5 or later.
+Needs `@mycelo/septum@^0.10.1` and a Mycelo core at phase 7.5 or later.

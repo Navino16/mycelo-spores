@@ -39,10 +39,18 @@ function stubContext(locale: string, commands: readonly CommandInfo[]) {
   const ctx = {
     locale,
     principal: { id: 7, channel: 'signal', externalId: '+3360', roles: ['owner'] },
-    t: (key: string, params: Record<string, unknown> = {}) =>
-      known(key) === 'reply.line' ? `${String(params.name)}=${String(params.description)}`
-        : key === 'reply.list' ? `list[${String(params.lines)}]`
-          : key,
+    t: (key: string, params: Record<string, unknown> = {}) => {
+      known(key)
+      switch (key) {
+        case 'reply.line': return `${String(params.name)}=${String(params.description)}`
+        case 'reply.lineWithArgs': return `${String(params.name)}=${String(params.description)}[${String(params.args)}]`
+        case 'reply.arg': return `${String(params.name)}:${String(params.description)}:${String(params.state)}`
+        case 'reply.argRequired': return 'REQ'
+        case 'reply.argOptional': return 'OPT'
+        case 'reply.list': return `list[${String(params.lines)}]`
+        default: return key
+      }
+    },
     reply: async (content: { text?: string }) => { sent.push(content) },
     rhiza: () => ({
       available: async (_p: unknown, l: string) => { asked.push({ locale: l }); return commands },
@@ -70,6 +78,46 @@ describe('the help spore', () => {
     // Plural, and asserted as a sequence: a mutant returning only the last command dies here,
     // where a membership check would let it live.
     expect(sent).toEqual([{ text: 'list[help=List commands\nlinks=Show services]' }])
+  })
+
+  it('renders a command with no args exactly as before', async () => {
+    const { ctx, sent } = stubContext('en', [
+      { qualified: 'help.help', name: 'help', plugin: 'help', description: 'List commands' },
+    ])
+    await module.create().handlers.handleHelp(invocation, ctx)
+    expect(sent).toEqual([{ text: 'list[help=List commands]' }])
+  })
+
+  it('renders each argument paired with its own description and required state, not a neighbour\'s', async () => {
+    const { ctx, sent } = stubContext('en', [
+      {
+        qualified: 'admin.grant', name: 'grant', plugin: 'admin', description: 'Give a role',
+        args: [
+          { name: 'role', description: 'Role name', required: true },
+          { name: 'who', description: 'Recipient', required: false },
+        ],
+      },
+    ])
+    await module.create().handlers.handleHelp(invocation, ctx)
+    // A transposed pairing (role/Recipient/OPT or who/Role name/REQ) would still pass a
+    // membership check on names alone — assert the exact per-argument triple instead.
+    expect(sent).toEqual([{
+      text: 'list[grant=Give a role[role:Role name:REQ\nwho:Recipient:OPT]]',
+    }])
+  })
+
+  it('renders a mix of commands with and without arguments in the scope\'s order', async () => {
+    const { ctx, sent } = stubContext('en', [
+      { qualified: 'help.help', name: 'help', plugin: 'help', description: 'List commands' },
+      {
+        qualified: 'admin.role-new', name: 'role-new', plugin: 'admin', description: 'Create a role',
+        args: [{ name: 'name', description: 'Role name', required: true }],
+      },
+    ])
+    await module.create().handlers.handleHelp(invocation, ctx)
+    expect(sent).toEqual([{
+      text: 'list[help=List commands\nrole-new=Create a role[name:Role name:REQ]]',
+    }])
   })
 
   it('answers the empty case rather than a bare header', async () => {

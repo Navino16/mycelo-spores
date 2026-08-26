@@ -1,0 +1,151 @@
+command:
+  plugins:
+    description: "Lister les plugins installés"
+  whoami:
+    description: "Indiquer votre identité et vos rôles"
+  roles:
+    description: "Lister les rôles et leurs motifs de commande"
+  grant:
+    description: "Donner un rôle à quelqu'un sur ce canal"
+    arg:
+      role:
+        description: "Nom du rôle"
+      who:
+        description: "Identifiant du destinataire sur ce canal"
+  revoke:
+    description: "Retirer un rôle à quelqu'un sur ce canal"
+    arg:
+      role:
+        description: "Nom du rôle"
+      who:
+        description: "Identifiant du canal"
+  role-new:
+    description: "Créer un rôle avec des motifs de commande"
+    arg:
+      name:
+        description: "Nom du rôle"
+  plugin-list:
+    description: "Lister les plugins installés et leur état d'activation"
+  plugin-enable:
+    description: "Activer un plugin installé"
+    arg:
+      name:
+        description: "Nom du plugin"
+  plugin-disable:
+    description: "Désactiver un plugin installé"
+    arg:
+      name:
+        description: "Nom du plugin"
+  plugin-set:
+    description: "Définir une valeur de configuration d'un plugin"
+    arg:
+      name:
+        description: "Nom du plugin"
+      key:
+        description: "Clé de réglage"
+      value:
+        description: "Valeur du réglage"
+  plugin-config:
+    description: "Afficher les réglages d'un plugin, secrets masqués"
+    arg:
+      name:
+        description: "Nom du plugin"
+  conversations:
+    description: "Lister les conversations vues par le bot"
+  where-rule:
+    description: "Confiner un motif de commande aux messages privés ou aux groupes"
+    arg:
+      pattern:
+        description: "Motif de commande"
+      where:
+        description: "dm ou group"
+  broadcast-add:
+    description: "Ajouter une cible de diffusion"
+    arg:
+      channel:
+        description: "Nom du canal"
+      conversation:
+        description: "Identifiant de conversation"
+  broadcast:
+    description: "Envoyer un message à toutes les cibles configurées"
+    arg:
+      text:
+        description: "Message à envoyer"
+  inhibitor-channels:
+    description: "Confiner un inhibiteur à des canaux nommés"
+    arg:
+      name:
+        description: "Nom de l'inhibiteur"
+  lang:
+    description: "Choisir la langue dans laquelle le bot vous répond"
+    arg:
+      locale:
+        description: "Une étiquette de langue, par exemple en ou fr"
+  lang-group:
+    description: "Choisir la langue de cette conversation"
+    arg:
+      locale:
+        description: "Une étiquette de langue, par exemple en ou fr"
+reply:
+  plugins:
+    none: "aucun plugin installé"
+    list: "{names}"
+  whoami:
+    text: "{channel}:{externalId} rôles : {roles}"
+    no-roles: "aucun"
+  roles:
+    none: "aucun rôle configuré"
+    list: "{roles}"
+    no-patterns: "aucun"
+  grant:
+    usage: "usage : /grant '<rôle>' '<qui>'"
+    unknown: "aucune identité « {who} » sur le canal « {channel} »"
+    done: "rôle « {role} » donné à {who}"
+  revoke:
+    usage: "usage : /revoke '<rôle>' '<qui>'"
+    unknown: "aucune identité « {who} » sur le canal « {channel} »"
+    done: "rôle « {role} » retiré à {who}"
+  role-new:
+    usage: "usage : /role-new '<nom>' [motif...]"
+    done: "rôle « {name} » créé avec les motifs : {patterns}"
+    no-patterns: "aucun"
+  plugin-list:
+    none: "aucun plugin"
+    list: "{lines}"
+    unknown-kind: "inconnu"
+  plugin-enable:
+    usage: "usage : /plugin-enable '<nom>'"
+    done: "{name} activé"
+  plugin-disable:
+    usage: "usage : /plugin-disable '<nom>'"
+    done: "{name} désactivé"
+  plugin-set:
+    usage: "usage : /plugin-set '<nom>' '<clé>' '<valeur>'"
+    done: "{key} défini sur {name}"
+  plugin-config:
+    usage: "usage : /plugin-config '<nom>'"
+    none: "aucun réglage"
+    list: "{lines}"
+  conversations:
+    none: "aucune conversation"
+    list: "{lines}"
+  where-rule:
+    usage: "usage : /where-rule '<motif>' '<dm|group>'"
+    done: "« {pattern} » est désormais restreint à {where}"
+  broadcast-add:
+    usage: "usage : /broadcast-add '<canal>' '<conversation>'"
+    done: "{channel}/{conversation} ajouté"
+  broadcast:
+    usage: "usage : /broadcast '<texte>'"
+    done: "{ok} envois réussis, {failed} échoués"
+  inhibitor-channels:
+    usage: "usage : /inhibitor-channels '<nom>' [canal...]"
+    all: "{name} s'applique à tous les canaux"
+    list: "{name} s'applique à : {channels}"
+  lang:
+    usage: "usage : /lang '<locale>'"
+    set: "votre langue est désormais {locale}"
+  lang-group:
+    usage: "usage : /lang-group '<locale>'"
+    group-only: "lang-group n'a de sens qu'en groupe"
+    set: "cette conversation répond désormais en {locale}"

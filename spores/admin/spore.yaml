@@ -1,0 +1,134 @@
+kind: enzyme
+name: admin
+septum: "^0.7"
+description: Reads and administers the mycelium through scopes.
+requires:
+  - rhiza: mycelium
+    scopes: [plugins.read, plugins.toggle, plugins.configure, principals.read, roles.read,
+             roles.assign, roles.manage, conversations.read, messages.broadcast,
+             restrictions.manage, locale.manage]
+commands:
+  - name: plugins
+    description: command.plugins.description
+    code: handlePlugins
+  - name: whoami
+    description: command.whoami.description
+    code: handleWhoami
+  - name: roles
+    description: command.roles.description
+    code: handleRoles
+  - name: grant
+    description: command.grant.description
+    code: handleGrant
+    args:
+      - name: role
+        description: command.grant.arg.role.description
+        required: true
+      - name: who
+        description: command.grant.arg.who.description
+        required: true
+  - name: revoke
+    description: command.revoke.description
+    code: handleRevoke
+    args:
+      - name: role
+        description: command.revoke.arg.role.description
+        required: true
+      - name: who
+        description: command.revoke.arg.who.description
+        required: true
+  - name: role-new
+    description: command.role-new.description
+    code: handleRoleNew
+    args:
+      - name: name
+        description: command.role-new.arg.name.description
+        required: true
+  - name: plugin-list
+    description: command.plugin-list.description
+    code: handlePluginList
+  - name: plugin-enable
+    description: command.plugin-enable.description
+    code: handlePluginEnable
+    args:
+      - name: name
+        description: command.plugin-enable.arg.name.description
+        required: true
+  - name: plugin-disable
+    description: command.plugin-disable.description
+    code: handlePluginDisable
+    args:
+      - name: name
+        description: command.plugin-disable.arg.name.description
+        required: true
+  - name: plugin-set
+    description: command.plugin-set.description
+    code: handlePluginSet
+    args:
+      - name: name
+        description: command.plugin-set.arg.name.description
+        required: true
+      - name: key
+        description: command.plugin-set.arg.key.description
+        required: true
+      - name: value
+        description: command.plugin-set.arg.value.description
+        required: true
+  - name: plugin-config
+    description: command.plugin-config.description
+    code: handlePluginConfig
+    args:
+      - name: name
+        description: command.plugin-config.arg.name.description
+        required: true
+  - name: conversations
+    description: command.conversations.description
+    code: handleConversations
+  - name: where-rule
+    description: command.where-rule.description
+    code: handleWhereRule
+    args:
+      - name: pattern
+        description: command.where-rule.arg.pattern.description
+        required: true
+      - name: where
+        description: command.where-rule.arg.where.description
+        required: true
+  - name: broadcast-add
+    description: command.broadcast-add.description
+    code: handleBroadcastAdd
+    args:
+      - name: channel
+        description: command.broadcast-add.arg.channel.description
+        required: true
+      - name: conversation
+        description: command.broadcast-add.arg.conversation.description
+        required: true
+  - name: broadcast
+    description: command.broadcast.description
+    code: handleBroadcast
+    args:
+      - name: text
+        description: command.broadcast.arg.text.description
+        required: true
+  - name: inhibitor-channels
+    description: command.inhibitor-channels.description
+    code: handleInhibitorChannels
+    args:
+      - name: name
+        description: command.inhibitor-channels.arg.name.description
+        required: true
+  - name: lang
+    description: command.lang.description
+    code: handleLang
+    args:
+      - name: locale
+        description: command.lang.arg.locale.description
+        required: true
+  - name: lang-group
+    description: command.lang-group.description
+    code: handleLangGroup
+    args:
+      - name: locale
+        description: command.lang-group.arg.locale.description
+        required: true
