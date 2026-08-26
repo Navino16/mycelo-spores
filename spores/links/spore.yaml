@@ -1,6 +1,6 @@
 kind: enzyme
 name: links
-septum: "^0.8"
+septum: "^0.10"
 description: Answers with the house's own service URLs, which the operator configures.
 commands:
   - name: links

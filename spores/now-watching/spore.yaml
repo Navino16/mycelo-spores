@@ -1,6 +1,6 @@
 kind: enzyme
 name: now-watching
-septum: "^0.9"
+septum: "^0.10"
 description: Answers with what the house's media server is playing right now.
 requires:
   - any_of: [{ rhiza: jellyfin }, { rhiza: plex }]
