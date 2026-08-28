@@ -1,5 +1,5 @@
 kind: hypha
 name: signal
-septum: "^0.10"
+septum: "^0.11"
 description: Signal channel, through a signal-cli JSON-RPC daemon the operator runs.
 capabilities: [group_membership]

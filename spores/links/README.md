@@ -58,4 +58,4 @@ No `rhiza`. `links` answers entirely from its own settings.
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.10.1` and a Mycelo core at phase 7 or later.
+Needs `@mycelo/septum@^0.11.0` and a Mycelo core at phase 7 or later.
