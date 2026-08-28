@@ -5,7 +5,7 @@
   "type": "module",
   "license": "MIT",
   "dependencies": {
-    "@mycelo/septum": "^0.10.1",
+    "@mycelo/septum": "^0.11.0",
     "zod": "^4.4.3"
   }
 }

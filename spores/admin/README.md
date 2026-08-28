@@ -46,16 +46,14 @@ One `rhiza`, `mycelium`, with eleven scopes:
 | `restrictions.manage` | `where-rule`, `broadcast-add`, `inhibitor-channels` |
 | `locale.manage` | `lang`, `lang-group` |
 
-`spore.yaml`'s `septum: "^0.10"` is the **minimum** this plugin needs — not the version it was
-built against. `package.json`'s `@mycelo/septum: "^0.10.1"` is what the workspace actually
+`spore.yaml`'s `septum: "^0.11"` is the **minimum** this plugin needs — not the version it was
+built against. `package.json`'s `@mycelo/septum: "^0.11.0"` is what the workspace actually
 resolves and publishes against; the two ranges answer different questions. They agree here for the
 same reason they agree across the whole registry: a caret range below 1.0 is bounded, not a floor,
-so the older range this manifest used to declare was already incompatible with the `0.10.1` the
-workspace resolves — not because `admin` itself needs something `0.10` added (`CLAUDE.md`). It does
-not: `admin`'s handlers only read `Invocation.args`, a phase-2 member, never `CommandInfo.args` or
-`ArgInfo`, and its manifest's own `args:`/`required:` fields predate `0.10`. `mycelo`'s own
-fixtures still diverge, for the opposite reason: of its 11, 10 carry a `package.json` resolving
-`^0.10.0`, and all 11 manifests declare an older range (6×`^0.5`, 2×`^0.7`, 2×`^0.8`, 1×`^0.9`).
+so the range this manifest used to declare was already incompatible with the `0.11.0` the
+workspace resolves — not because `admin` itself needs something `0.11` added. It does not:
+`admin`'s handlers only read `Invocation.args`, a phase-2 member, never `CommandInfo.args` or
+`ArgInfo`, and its manifest's own `args:`/`required:` fields predate `0.10`.
 
 ## Argument description keys are command-scoped here
 
@@ -90,4 +88,4 @@ spore is the one meant for an operator to install.
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.10.1` and a Mycelo core at phase 7 or later.
+Needs `@mycelo/septum@^0.11.0` and a Mycelo core at phase 7 or later.

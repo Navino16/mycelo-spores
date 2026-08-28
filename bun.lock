@@ -16,77 +16,77 @@
     },
     "spores/admin": {
       "name": "@mycelo/spore-admin",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.1",
+        "@mycelo/septum": "^0.11.0",
       },
     },
     "spores/group-gate": {
       "name": "@mycelo/spore-group-gate",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.1",
+        "@mycelo/septum": "^0.11.0",
         "zod": "^4.4.3",
       },
     },
     "spores/help": {
       "name": "@mycelo/spore-help",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.1",
+        "@mycelo/septum": "^0.11.0",
       },
     },
     "spores/links": {
       "name": "@mycelo/spore-links",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.1",
+        "@mycelo/septum": "^0.11.0",
         "zod": "^4.4.3",
       },
     },
     "spores/now-watching": {
       "name": "@mycelo/spore-now-watching",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.1",
+        "@mycelo/septum": "^0.11.0",
       },
       "devDependencies": {
-        "@mycelo/spore-plex": "^0.1.0",
+        "@mycelo/spore-plex": "^0.2.0",
       },
     },
     "spores/plex": {
       "name": "@mycelo/spore-plex",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.1",
+        "@mycelo/septum": "^0.11.0",
         "zod": "^4.4.3",
       },
     },
     "spores/radarr": {
       "name": "@mycelo/spore-radarr",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.1",
+        "@mycelo/septum": "^0.11.0",
         "zod": "^4.4.3",
       },
     },
     "spores/signal": {
       "name": "@mycelo/spore-signal",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.1",
+        "@mycelo/septum": "^0.11.0",
         "zod": "^4.4.3",
       },
     },
     "spores/upcoming-movies": {
       "name": "@mycelo/spore-upcoming-movies",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
-        "@mycelo/septum": "^0.10.1",
+        "@mycelo/septum": "^0.11.0",
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@mycelo/spore-radarr": "^0.1.0",
+        "@mycelo/spore-radarr": "^0.2.0",
       },
     },
   },
@@ -161,7 +161,7 @@
 
     "@manypkg/tools": ["@manypkg/tools@2.1.2", "", { "dependencies": { "jju": "^1.4.0", "tinyglobby": "^0.2.13", "yaml": "^2.9.0" } }, "sha512-6QEf6yqFbETdwGITKq57aYoPfX/3K8XFNwsAlx0C1M7o8cb79sv1M3w+tWuWvIcSbNqrLF7OD7YpZMVVz335hQ=="],
 
-    "@mycelo/septum": ["@mycelo/septum@0.10.1", "", { "dependencies": { "intl-messageformat": "^11.2.13", "zod": "^4.4.3" } }, "sha512-1T3Ra9wg+UykDFYOEfNwhGnonp192yBc76LaW26XZDGCfZGiHsdfpD+BLodCDQQrkzVRoc6Bkykmg0d3qnH74Q=="],
+    "@mycelo/septum": ["@mycelo/septum@0.11.0", "", { "dependencies": { "intl-messageformat": "^11.2.13", "zod": "^4.4.3" } }, "sha512-SxYgf+I7Y1opEEFMQViUbBS5eItgkLxNvTe9wBSt/lDcpX2H5reM6lOKydfUSnSxDR9YKulOjHzs0+/gu66rJg=="],
 
     "@mycelo/spore-admin": ["@mycelo/spore-admin@workspace:spores/admin"],
 
@@ -191,7 +191,7 @@
 
     "@types/json-schema": ["@types/json-schema@7.0.15", "", {}, "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="],
 
-    "@types/node": ["@types/node@26.3.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-L3fgrnchriRC2ExBflb8j4uZZURHZfQsmQeyVzhjcHW4kkwVyo8/0h1B2MVzMTrYUJYu6G7EWs14hW/L9putqw=="],
+    "@types/node": ["@types/node@26.4.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-faiGnoIrLH/V8cibOMEAZ8pMw6oXqSukl29ra4mN8GdaB2ZewzeaLj+INpV5N+Z1eKWzY+IzaIZH2EIR6YZRNQ=="],
 
     "@typescript-eslint/eslint-plugin": ["@typescript-eslint/eslint-plugin@8.68.0", "", { "dependencies": { "@eslint-community/regexpp": "^4.12.2", "@typescript-eslint/scope-manager": "8.68.0", "@typescript-eslint/type-utils": "8.68.0", "@typescript-eslint/utils": "8.68.0", "@typescript-eslint/visitor-keys": "8.68.0", "ignore": "^7.0.5", "natural-compare": "^1.4.0", "ts-api-utils": "^2.5.0" }, "peerDependencies": { "@typescript-eslint/parser": "^8.68.0", "eslint": "^8.57.0 || ^9.0.0 || ^10.0.0", "typescript": ">=4.8.4 <6.1.0" } }, "sha512-WASHDpCm6qO5jj9g1a+8NiW5+GCkAyLReR56/4VruYmNgfUmqpxOfZ2Yfb8xGfJPWv5Qi6LSD8sXdces3vbp/Q=="],
 
