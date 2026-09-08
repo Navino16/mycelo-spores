@@ -1,6 +1,6 @@
 kind: enzyme
 name: upcoming-movies
-septum: "^0.11"
+septum: "^0.12"
 description: Renders Radarr's release calendar as a chat reply.
 requires:
   - rhiza: radarr

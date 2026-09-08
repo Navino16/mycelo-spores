@@ -50,13 +50,12 @@ export default {
           await ctx.reply({ text: ctx.t('reply.grant.unknown', { who, channel }) })
           return
         }
-        // The mycelium curates its own diagnostics ("role 'x' does not exist") and they are
-        // not this spore's catalogue to translate; letting the throw reach the bus would
-        // replace them all with "command 'grant' failed".
-        try {
-          await ctx.rhiza<RolesAssign>('mycelium').assignRole(identity.id, role)
-        } catch (e) {
-          await ctx.reply({ text: (e as Error).message })
+        // A refusal is the mycelium's own diagnostic in its own domain, so it is rendered
+        // rather than translated here. A throw is now an infrastructure fault and belongs
+        // to the bus.
+        const granted = await ctx.rhiza<RolesAssign>('mycelium').assignRole(identity.id, role)
+        if (!granted.ok) {
+          await ctx.reply({ text: ctx.t(granted.refusal) })
           return
         }
         await ctx.reply({ text: ctx.t('reply.grant.done', { role, who }) })
@@ -73,10 +72,9 @@ export default {
           await ctx.reply({ text: ctx.t('reply.revoke.unknown', { who, channel }) })
           return
         }
-        try {
-          await ctx.rhiza<RolesAssign>('mycelium').revokeRole(identity.id, role)
-        } catch (e) {
-          await ctx.reply({ text: (e as Error).message })
+        const revoked = await ctx.rhiza<RolesAssign>('mycelium').revokeRole(identity.id, role)
+        if (!revoked.ok) {
+          await ctx.reply({ text: ctx.t(revoked.refusal) })
           return
         }
         await ctx.reply({ text: ctx.t('reply.revoke.done', { role, who }) })
@@ -92,10 +90,9 @@ export default {
           await ctx.reply({ text: ctx.t('reply.role-new.usage') })
           return
         }
-        try {
-          await ctx.rhiza<RolesManage>('mycelium').createRole(name, patterns)
-        } catch (e) {
-          await ctx.reply({ text: (e as Error).message })
+        const created = await ctx.rhiza<RolesManage>('mycelium').createRole(name, patterns)
+        if (!created.ok) {
+          await ctx.reply({ text: ctx.t(created.refusal) })
           return
         }
         const rendered = patterns.join(', ') || ctx.t('reply.role-new.no-patterns')
@@ -117,14 +114,12 @@ export default {
           return
         }
         const mycelium = ctx.rhiza<PluginsToggle>('mycelium')
-        // The refusal reason is what tells the operator what to fix; swallowing it
-        // would leave nothing but "failed".
-        try {
-          await mycelium.enable(name)
-          await ctx.reply({ text: ctx.t('reply.plugin-enable.done', { name }) })
-        } catch (e) {
-          await ctx.reply({ text: (e as Error).message })
-        }
+        // The refusal is what tells the operator what to fix; answering the done key
+        // regardless would leave nothing but a false success.
+        const enabled = await mycelium.enable(name)
+        await ctx.reply({
+          text: enabled.ok ? ctx.t('reply.plugin-enable.done', { name }) : ctx.t(enabled.refusal),
+        })
       },
       handlePluginDisable: async (invocation, ctx) => {
         const name = invocation.args['name']
@@ -133,12 +128,10 @@ export default {
           return
         }
         const mycelium = ctx.rhiza<PluginsToggle>('mycelium')
-        try {
-          await mycelium.disable(name)
-          await ctx.reply({ text: ctx.t('reply.plugin-disable.done', { name }) })
-        } catch (e) {
-          await ctx.reply({ text: (e as Error).message })
-        }
+        const disabled = await mycelium.disable(name)
+        await ctx.reply({
+          text: disabled.ok ? ctx.t('reply.plugin-disable.done', { name }) : ctx.t(disabled.refusal),
+        })
       },
       handlePluginSet: async (invocation, ctx) => {
         const { name, key, value } = invocation.args
@@ -147,12 +140,10 @@ export default {
           return
         }
         const mycelium = ctx.rhiza<PluginsConfigure>('mycelium')
-        try {
-          await mycelium.setSetting(name, key, coerce(value))
-          await ctx.reply({ text: ctx.t('reply.plugin-set.done', { key, name }) })
-        } catch (e) {
-          await ctx.reply({ text: (e as Error).message })
-        }
+        const set = await mycelium.setSetting(name, key, coerce(value))
+        await ctx.reply({
+          text: set.ok ? ctx.t('reply.plugin-set.done', { key, name }) : ctx.t(set.refusal),
+        })
       },
       handlePluginConfig: async (invocation, ctx) => {
         const name = invocation.args['name']
@@ -161,13 +152,12 @@ export default {
           return
         }
         const mycelium = ctx.rhiza<PluginsConfigure>('mycelium')
-        let settings: Record<string, unknown>
-        try {
-          settings = await mycelium.settings(name)
-        } catch (e) {
-          await ctx.reply({ text: (e as Error).message })
+        const read = await mycelium.settings(name)
+        if (!read.ok) {
+          await ctx.reply({ text: ctx.t(read.refusal) })
           return
         }
+        const settings = read.value
         const lines = Object.entries(settings).map(([k, v]) => `${k} = ${String(v)}`).join('\n')
         await ctx.reply({
           text: lines === '' ? ctx.t('reply.plugin-config.none') : ctx.t('reply.plugin-config.list', { lines }),

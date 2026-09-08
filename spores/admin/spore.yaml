@@ -1,6 +1,6 @@
 kind: enzyme
 name: admin
-septum: "^0.11"
+septum: "^0.12"
 description: Reads and administers the mycelium through scopes.
 requires:
   - rhiza: mycelium

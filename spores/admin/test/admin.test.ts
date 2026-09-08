@@ -5,7 +5,9 @@ import { parse as parseYaml } from 'yaml'
 import { IntlMessageFormat } from 'intl-messageformat'
 import { enzymeChecks } from '@mycelo/septum/conformance'
 import module from '../src/index.js'
-import type { EnzymeContext, IncomingMessage, Invocation } from '@mycelo/septum'
+import type {
+  EnzymeContext, IncomingMessage, Invocation, Outcome, OutcomeOf, Refusal, TranslatableRef,
+} from '@mycelo/septum'
 
 const here = join(import.meta.dirname, '..')
 
@@ -95,13 +97,13 @@ interface Mycelium {
   listPlugins: () => PluginRow[]
   listRoles: () => Promise<RoleRow[]>
   findByIdentity: (channel: string, who: string) => Promise<{ id: string } | null>
-  assignRole: (id: string, role: string) => Promise<void>
-  revokeRole: (id: string, role: string) => Promise<void>
-  createRole: (name: string, patterns: string[]) => Promise<void>
-  enable: (name: string) => Promise<void>
-  disable: (name: string) => Promise<void>
-  setSetting: (name: string, key: string, value: unknown) => Promise<void>
-  settings: (name: string) => Promise<Record<string, unknown>>
+  assignRole: (id: string, role: string) => Promise<Outcome>
+  revokeRole: (id: string, role: string) => Promise<Outcome>
+  createRole: (name: string, patterns: string[]) => Promise<Outcome>
+  enable: (name: string) => Promise<Outcome>
+  disable: (name: string) => Promise<Outcome>
+  setSetting: (name: string, key: string, value: unknown) => Promise<Outcome>
+  settings: (name: string) => Promise<OutcomeOf<Record<string, unknown>>>
   listConversations: () => Promise<ConversationRow[]>
   setContextRule: (pattern: string, where: string) => Promise<void>
   addBroadcastTarget: (t: { channel: string, conversationId: string }) => Promise<void>
@@ -116,13 +118,13 @@ function defaultMycelium(): Mycelium {
     listPlugins: () => [],
     listRoles: () => Promise.resolve([]),
     findByIdentity: () => Promise.resolve(null),
-    assignRole: () => Promise.resolve(),
-    revokeRole: () => Promise.resolve(),
-    createRole: () => Promise.resolve(),
-    enable: () => Promise.resolve(),
-    disable: () => Promise.resolve(),
-    setSetting: () => Promise.resolve(),
-    settings: () => Promise.resolve({}),
+    assignRole: () => Promise.resolve({ ok: true }),
+    revokeRole: () => Promise.resolve({ ok: true }),
+    createRole: () => Promise.resolve({ ok: true }),
+    enable: () => Promise.resolve({ ok: true }),
+    disable: () => Promise.resolve({ ok: true }),
+    setSetting: () => Promise.resolve({ ok: true }),
+    settings: () => Promise.resolve({ ok: true, value: {} }),
     listConversations: () => Promise.resolve([]),
     setContextRule: () => Promise.resolve(),
     addBroadcastTarget: () => Promise.resolve(),
@@ -132,6 +134,17 @@ function defaultMycelium(): Mycelium {
     setConversationLocale: () => Promise.resolve(),
   }
 }
+
+/**
+ * A mycelium refusal since septum 0.12: a `common`-domain ref, never an English sentence. `stub`'s
+ * `t` renders it as `common:<key>(<params>)`, which is what every assertion below expects.
+ */
+function refused(key: string, params?: Record<string, unknown>): Refusal {
+  return { ok: false, refusal: { domain: 'common', key, ...(params === undefined ? {} : { params }) } }
+}
+
+const rendered = (key: string, params: Record<string, unknown> = {}): string =>
+  `common:${key}(${JSON.stringify(params)})`
 
 type Told = [string, unknown[]]
 
@@ -156,7 +169,11 @@ function stub(overrides: Partial<Mycelium> = {}, roles: readonly string[] = ['ow
     logger: { debug: () => undefined, info: () => undefined, warn: () => undefined, error: () => undefined, child: () => ctx.logger },
     rhiza: (name: string) => { asked.push(name); return mycelium },
     has: () => true,
-    t: (key: string, params: Record<string, unknown> = {}, locale?: string) => {
+    t: (key: string | TranslatableRef, params: Record<string, unknown> = {}, locale?: string) => {
+      if (typeof key !== 'string') {
+        calls.push([`${key.domain}:${key.key}`, key.params ?? {}, locale])
+        return `${key.domain}:${key.key}(${JSON.stringify(key.params ?? {})})`
+      }
       calls.push([key, params, locale])
       assertReadsExactly(known(key), params)
       return `${key}(${JSON.stringify(params)})`
@@ -224,7 +241,7 @@ describe('the admin spore', () => {
       listPlugins: () => [{ name: 'radarr', state: 'germinated' }],
       listRoles: () => Promise.resolve([{ name: 'owner', patterns: ['*'] }]),
       findByIdentity: () => Promise.resolve({ id: 'p2' }),
-      settings: () => Promise.resolve({ url: 'http://x' }),
+      settings: () => Promise.resolve({ ok: true, value: { url: 'http://x' } }),
       listConversations: () => Promise.resolve([{ conversationId: 'c:1', kind: 'dm', label: 'Alice' }]),
       broadcast: () => Promise.resolve([{ ok: true }]),
     })
@@ -304,13 +321,25 @@ describe('the admin spore', () => {
       expect(sent[0]?.text).toContain('"who":"bob"')
     })
 
-    it('surfaces the mycelium’s own diagnostic untranslated rather than a generic failure', async () => {
+    it('renders the mycelium’s refusal ref rather than confirming or failing generically', async () => {
       const { ctx, sent } = stub({
         findByIdentity: () => Promise.resolve({ id: 'p2' }),
-        assignRole: () => Promise.reject(new Error("role 'guest' does not exist")),
+        assignRole: () => Promise.resolve(refused('refusal.role.notFound', { name: 'guest' })),
       })
       await handlers.handleGrant(call('grant', { role: 'guest', who: 'bob' }), ctx)
-      expect(sent[0]?.text).toBe("role 'guest' does not exist")
+      expect(sent).toHaveLength(1)
+      expect(sent[0]?.text).toBe(rendered('refusal.role.notFound', { name: 'guest' }))
+    })
+
+    // The eleven Outcome methods resolve a refusal; anything they still throw is an
+    // infrastructure fault and belongs to the bus, not to a reply.
+    it('lets a throw propagate rather than reporting it as a refusal', async () => {
+      const { ctx } = stub({
+        findByIdentity: () => Promise.resolve({ id: 'p2' }),
+        assignRole: () => Promise.reject(new Error('SQLITE_BUSY')),
+      })
+      expect(handlers.handleGrant(call('grant', { role: 'guest', who: 'bob' }), ctx))
+        .rejects.toThrow('SQLITE_BUSY')
     })
   })
 
@@ -334,6 +363,16 @@ describe('the admin spore', () => {
       await handlers.handleRevoke(call('revoke', { role: 'guest', who: 'bob' }), ctx)
       expect(sent[0]?.text).toContain(known('reply.revoke.done'))
     })
+
+    it('renders the mycelium’s refusal ref rather than confirming', async () => {
+      const { ctx, sent } = stub({
+        findByIdentity: () => Promise.resolve({ id: 'p2' }),
+        revokeRole: () => Promise.resolve(refused('refusal.role.notFound', { name: 'guest' })),
+      })
+      await handlers.handleRevoke(call('revoke', { role: 'guest', who: 'bob' }), ctx)
+      expect(sent).toHaveLength(1)
+      expect(sent[0]?.text).toBe(rendered('refusal.role.notFound', { name: 'guest' }))
+    })
   })
 
   describe('role-new', () => {
@@ -355,6 +394,15 @@ describe('the admin spore', () => {
       const { ctx, sent } = stub()
       await handlers.handleRoleNew(call('role-new', {}, 'guest'), ctx)
       expect(sent[0]?.text).toContain(known('reply.role-new.no-patterns'))
+    })
+
+    it('renders the mycelium’s refusal ref rather than confirming', async () => {
+      const { ctx, sent } = stub({
+        createRole: () => Promise.resolve(refused('refusal.role.exists', { name: 'guest' })),
+      })
+      await handlers.handleRoleNew(call('role-new', {}, 'guest *'), ctx)
+      expect(sent).toHaveLength(1)
+      expect(sent[0]?.text).toBe(rendered('refusal.role.exists', { name: 'guest' }))
     })
   })
 
@@ -386,10 +434,13 @@ describe('the admin spore', () => {
       expect(sent[0]?.text).toContain(known('reply.plugin-enable.done'))
     })
 
-    it('surfaces the refusal reason untranslated rather than a generic failure', async () => {
-      const { ctx, sent } = stub({ enable: () => Promise.reject(new Error('apiKey: Invalid input')) })
+    it('renders the refusal ref rather than the done key', async () => {
+      const { ctx, sent } = stub({
+        enable: () => Promise.resolve(refused('refusal.plugin.notInstalled', { name: 'radarr' })),
+      })
       await handlers.handlePluginEnable(call('plugin-enable', { name: 'radarr' }), ctx)
-      expect(sent[0]?.text).toBe('apiKey: Invalid input')
+      expect(sent).toHaveLength(1)
+      expect(sent[0]?.text).toBe(rendered('refusal.plugin.notInstalled', { name: 'radarr' }))
     })
 
     it('answers its own usage for plugin-disable too, rather than reaching the mycelium', async () => {
@@ -404,6 +455,15 @@ describe('the admin spore', () => {
       await handlers.handlePluginDisable(call('plugin-disable', { name: 'radarr' }), ctx)
       expect(sent[0]?.text).toContain(known('reply.plugin-disable.done'))
     })
+
+    it('renders the refusal ref rather than the done key on disable too', async () => {
+      const { ctx, sent } = stub({
+        disable: () => Promise.resolve(refused('refusal.plugin.notInstalled', { name: 'radarr' })),
+      })
+      await handlers.handlePluginDisable(call('plugin-disable', { name: 'radarr' }), ctx)
+      expect(sent).toHaveLength(1)
+      expect(sent[0]?.text).toBe(rendered('refusal.plugin.notInstalled', { name: 'radarr' }))
+    })
   })
 
   describe('plugin-set', () => {
@@ -416,7 +476,7 @@ describe('the admin spore', () => {
 
     it('coerces a JSON-shaped value before writing it, naming the key and name as the pair they are', async () => {
       const written: unknown[] = []
-      const { ctx, sent } = stub({ setSetting: (_n, _k, v) => { written.push(v); return Promise.resolve() } })
+      const { ctx, sent } = stub({ setSetting: (_n, _k, v) => { written.push(v); return Promise.resolve({ ok: true }) } })
       await handlers.handlePluginSet(call('plugin-set', { name: 'radarr', key: 'port', value: '8080' }), ctx)
       expect(written).toEqual([8080])
       expect(sent[0]?.text).toContain(known('reply.plugin-set.done'))
@@ -427,9 +487,18 @@ describe('the admin spore', () => {
 
     it('keeps a non-JSON value as a raw string', async () => {
       const written: unknown[] = []
-      const { ctx } = stub({ setSetting: (_n, _k, v) => { written.push(v); return Promise.resolve() } })
+      const { ctx } = stub({ setSetting: (_n, _k, v) => { written.push(v); return Promise.resolve({ ok: true }) } })
       await handlers.handlePluginSet(call('plugin-set', { name: 'radarr', key: 'url', value: 'http://x' }), ctx)
       expect(written).toEqual(['http://x'])
+    })
+
+    it('renders the refusal ref rather than the done key', async () => {
+      const { ctx, sent } = stub({
+        setSetting: () => Promise.resolve(refused('refusal.plugin.settingUndeclared', { name: 'radarr', key: 'nope' })),
+      })
+      await handlers.handlePluginSet(call('plugin-set', { name: 'radarr', key: 'nope', value: '1' }), ctx)
+      expect(sent).toHaveLength(1)
+      expect(sent[0]?.text).toBe(rendered('refusal.plugin.settingUndeclared', { name: 'radarr', key: 'nope' }))
     })
   })
 
@@ -448,10 +517,19 @@ describe('the admin spore', () => {
     })
 
     it('lists every setting, not just the last', async () => {
-      const { ctx, sent } = stub({ settings: () => Promise.resolve({ url: 'http://x', apiKey: '••••' }) })
+      const { ctx, sent } = stub({ settings: () => Promise.resolve({ ok: true, value: { url: 'http://x', apiKey: '••••' } }) })
       await handlers.handlePluginConfig(call('plugin-config', { name: 'radarr' }), ctx)
       expect(sent[0]?.text).toContain('url')
       expect(sent[0]?.text).toContain('apiKey')
+    })
+
+    it('renders the refusal ref rather than an empty settings list', async () => {
+      const { ctx, sent } = stub({
+        settings: () => Promise.resolve(refused('refusal.plugin.notInstalled', { name: 'radarr' })),
+      })
+      await handlers.handlePluginConfig(call('plugin-config', { name: 'radarr' }), ctx)
+      expect(sent).toHaveLength(1)
+      expect(sent[0]?.text).toBe(rendered('refusal.plugin.notInstalled', { name: 'radarr' }))
     })
   })
 
@@ -718,7 +796,7 @@ describe('the admin spore', () => {
     })
 
     it('renders each setting as key = value, not value = key', async () => {
-      const { ctx, sent } = stub({ settings: () => Promise.resolve({ url: 'http://x' }) })
+      const { ctx, sent } = stub({ settings: () => Promise.resolve({ ok: true, value: { url: 'http://x' } }) })
       await handlers.handlePluginConfig(call('plugin-config', { name: 'radarr' }), ctx)
       expect(sent[0]?.text).toContain('url = http://x')
     })
