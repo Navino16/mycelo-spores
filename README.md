@@ -30,11 +30,11 @@ Four kinds of plugin live here:
 | [`upcoming-movies`](spores/upcoming-movies) | `enzyme` | `/upcoming` lists the films Radarr expects, and whether it already holds the file | no |
 | [`now-watching`](spores/now-watching) | `enzyme` | `/watching` shows what the house's media server is playing | no |
 
-Every spore here depends on `@mycelo/septum@^0.11.0`. `admin`, `help`, `links`, `group-gate` and
+Every spore here depends on `@mycelo/septum@^0.12.0`. `admin`, `help`, `links`, `group-gate` and
 `signal` need a Mycelo core at phase 7 or later; `radarr`, `plex`, `upcoming-movies` and
 `now-watching` need phase 7.5 or later. Read each spore's own README before installing it.
 
-Every manifest here declares `septum: "^0.11"`, matching `package.json`'s `^0.11.0`. That is not
+Every manifest here declares `septum: "^0.12"`, matching `package.json`'s `^0.12.0`. That is not
 incidental: under 0.x caret semantics a range below 1.0 is bounded, not an open floor, so a
 manifest declaring `^0.10` **excludes** `0.11.0` outright — every range is wrong the moment
 `package.json` resolves the next minor, regardless of which feature, if any, a given spore
