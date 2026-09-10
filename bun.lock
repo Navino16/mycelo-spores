@@ -16,14 +16,14 @@
     },
     "spores/admin": {
       "name": "@mycelo/spore-admin",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "@mycelo/septum": "^1.0.0",
       },
     },
     "spores/group-gate": {
       "name": "@mycelo/spore-group-gate",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "@mycelo/septum": "^1.0.0",
         "zod": "^4.4.3",
@@ -31,14 +31,14 @@
     },
     "spores/help": {
       "name": "@mycelo/spore-help",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "@mycelo/septum": "^1.0.0",
       },
     },
     "spores/links": {
       "name": "@mycelo/spore-links",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "@mycelo/septum": "^1.0.0",
         "zod": "^4.4.3",
@@ -46,17 +46,17 @@
     },
     "spores/now-watching": {
       "name": "@mycelo/spore-now-watching",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "@mycelo/septum": "^1.0.0",
       },
       "devDependencies": {
-        "@mycelo/spore-plex": "^0.4.0",
+        "@mycelo/spore-plex": "^0.5.0",
       },
     },
     "spores/plex": {
       "name": "@mycelo/spore-plex",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "@mycelo/septum": "^1.0.0",
         "zod": "^4.4.3",
@@ -64,7 +64,7 @@
     },
     "spores/radarr": {
       "name": "@mycelo/spore-radarr",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "@mycelo/septum": "^1.0.0",
         "zod": "^4.4.3",
@@ -72,7 +72,7 @@
     },
     "spores/signal": {
       "name": "@mycelo/spore-signal",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "@mycelo/septum": "^1.0.0",
         "zod": "^4.4.3",
@@ -80,13 +80,13 @@
     },
     "spores/upcoming-movies": {
       "name": "@mycelo/spore-upcoming-movies",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "@mycelo/septum": "^1.0.0",
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@mycelo/spore-radarr": "^0.4.0",
+        "@mycelo/spore-radarr": "^0.5.0",
       },
     },
   },
