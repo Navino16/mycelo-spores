@@ -1,6 +1,6 @@
 kind: enzyme
 name: help
-septum: "^0.12"
+septum: "^1.0"
 description: Lists the commands the caller is authorized to invoke, described in their own language.
 requires:
   - rhiza: mycelium

@@ -112,4 +112,4 @@ both supplied by the core.
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.12.0` and a Mycelo core at phase 7 or later.
+Needs `@mycelo/septum@^1.0.0` and a Mycelo core at phase 7 or later.

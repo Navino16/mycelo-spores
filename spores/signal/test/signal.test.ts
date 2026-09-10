@@ -98,7 +98,7 @@ function context(
   emitted: IncomingMessage[],
   logger: Logger = noopLogger,
 ): HyphaContext<typeof config> {
-  return { config, logger, emit: (message) => emitted.push(message) }
+  return { name: 'signal', config, logger, emit: (message) => emitted.push(message) }
 }
 
 async function connected(daemon: FakeDaemon, socketPath: string, account = '+33700000000', logger: Logger = noopLogger) {

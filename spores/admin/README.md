@@ -46,17 +46,18 @@ One `rhiza`, `mycelium`, with eleven scopes:
 | `restrictions.manage` | `where-rule`, `broadcast-add`, `inhibitor-channels` |
 | `locale.manage` | `lang`, `lang-group` |
 
-`spore.yaml`'s `septum: "^0.12"` is the **minimum** this plugin needs — not the version it was
-built against. `package.json`'s `@mycelo/septum: "^0.12.0"` is what the workspace actually
-resolves and publishes against; the two ranges answer different questions. Every sweep before this
-one raised the manifest for the bounded-caret reason alone — a range below 1.0 excludes the next
-minor, so it goes stale the moment `package.json` resolves one, whatever the spore uses.
+`spore.yaml`'s `septum: "^1.0"` is the **minimum** this plugin needs — not the version it was
+built against. `package.json`'s `@mycelo/septum: "^1.0.0"` is what the workspace actually
+resolves and publishes against; the two ranges answer different questions. Every sweep up to
+`^0.11` raised the manifest for the bounded-caret reason alone — a range below 1.0 excludes the
+next minor, so it goes stale the moment `package.json` resolves one, whatever the spore uses.
 
 `0.12` is the first sweep where the minimum moved for its own sake. The eleven mycelium methods
 this spore calls — `assignRole`, `revokeRole`, `createRole`, `enable`, `disable`, `setSetting`,
 `settings` among them — resolve an `Outcome` there instead of rejecting. Against a `0.11` septum
 the handlers below would read a rejection that never comes and answer *done* to a refusal, so
-`^0.12` is a floor this plugin genuinely needs and not only a range kept in step.
+`^0.12` was a floor this plugin genuinely needed and not only a range kept in step. The `^1.0`
+sweep keeps that floor: `1.0.0` still resolves an `Outcome` from every method this spore calls.
 
 ## Argument description keys are command-scoped here
 
@@ -91,4 +92,4 @@ spore is the one meant for an operator to install.
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.12.0` and a Mycelo core at phase 7 or later.
+Needs `@mycelo/septum@^1.0.0` and a Mycelo core at phase 7 or later.
