@@ -48,9 +48,9 @@ One `rhiza`, `mycelium`, with eleven scopes:
 
 `spore.yaml`'s `septum: "^1.0"` is the **minimum** this plugin needs — not the version it was
 built against. `package.json`'s `@mycelo/septum: "^1.0.0"` is what the workspace actually
-resolves and publishes against; the two ranges answer different questions. Every sweep before this
-one raised the manifest for the bounded-caret reason alone — a range below 1.0 excludes the next
-minor, so it goes stale the moment `package.json` resolves one, whatever the spore uses.
+resolves and publishes against; the two ranges answer different questions. Every sweep up to
+`^0.11` raised the manifest for the bounded-caret reason alone — a range below 1.0 excludes the
+next minor, so it goes stale the moment `package.json` resolves one, whatever the spore uses.
 
 `0.12` is the first sweep where the minimum moved for its own sake. The eleven mycelium methods
 this spore calls — `assignRole`, `revokeRole`, `createRole`, `enable`, `disable`, `setSetting`,
