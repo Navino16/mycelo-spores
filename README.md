@@ -30,18 +30,21 @@ Four kinds of plugin live here:
 | [`upcoming-movies`](spores/upcoming-movies) | `enzyme` | `/upcoming` lists the films Radarr expects, and whether it already holds the file | no |
 | [`now-watching`](spores/now-watching) | `enzyme` | `/watching` shows what the house's media server is playing | no |
 
-Every spore here depends on `@mycelo/septum@^0.12.0`. `admin`, `help`, `links`, `group-gate` and
+Every spore here depends on `@mycelo/septum@^1.0.0`. `admin`, `help`, `links`, `group-gate` and
 `signal` need a Mycelo core at phase 7 or later; `radarr`, `plex`, `upcoming-movies` and
 `now-watching` need phase 7.5 or later. Read each spore's own README before installing it.
 
-Every manifest here declares `septum: "^0.12"`, matching `package.json`'s `^0.12.0`. That is not
-incidental: under 0.x caret semantics a range below 1.0 is bounded, not an open floor, so a
-manifest declaring `^0.10` **excludes** `0.11.0` outright — every range is wrong the moment
-`package.json` resolves the next minor, regardless of which feature, if any, a given spore
-actually uses. Since the core enforces the range at germination, at `enable()` and at
-`inoculate`, a stale one leaves the spore dormant rather than merely mis-declared.
-`spore.yaml` still states the minimum the plugin needs and `package.json` states what the
-workspace resolves; the two are free to diverge in general, they just don't for anything here.
+Every manifest here declares `septum: "^1.0"`, matching `package.json`'s `^1.0.0`. Every sweep
+before this one was needed because, under 0.x caret semantics, a range below 1.0 is bounded rather
+than an open floor — a manifest declaring `^0.10` excluded `0.11.0` outright, so the range went
+stale the moment `package.json` resolved the next minor, regardless of which feature, if any, a
+given spore used. At and above 1.0 a caret is a floor within the major instead: `^1.0.0` admits
+every future `1.x`, so this is the last sweep of this kind until `2.0.0`. Measured, not assumed —
+phase 9.8A's milestone booted a `^1.0` spore under a rebuilt septum `1.1.0` and it germinated.
+The core still enforces the declared range at germination, at `enable()` and at `inoculate`, so a
+stale one still leaves a spore dormant rather than merely mis-declared. `spore.yaml` states the
+minimum the plugin needs and `package.json` states what the workspace resolves; the two are free
+to diverge in general, they just don't for anything here.
 
 ## Installing, until phase 8
 

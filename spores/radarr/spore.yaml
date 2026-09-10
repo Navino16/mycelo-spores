@@ -1,4 +1,4 @@
 kind: rhiza
 name: radarr
-septum: "^0.12"
+septum: "^1.0"
 description: Radarr's HTTP API — release calendar and library search.

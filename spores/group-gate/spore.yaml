@@ -1,5 +1,5 @@
 kind: inhibitor
 name: group-gate
-septum: "^0.12"
+septum: "^1.0"
 enforcing: true
 description: Admits only members of a configured group on a configured channel.

@@ -39,4 +39,4 @@ rendered in the caller's language, and the rest of the bot keeps answering every
 
 ## Compatibility
 
-Needs `@mycelo/septum@^0.12.0` and a Mycelo core at phase 7.5 or later.
+Needs `@mycelo/septum@^1.0.0` and a Mycelo core at phase 7.5 or later.
