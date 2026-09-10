@@ -156,6 +156,9 @@ describe('every spore catalogue', () => {
   })
 
   it('renders every key in every locale with no unsubstituted placeholder', () => {
-    expect(renderEveryKey(catalogues, collectParams(catalogues))).toEqual([])
+    const params = collectParams(catalogues)
+    // Same guard as the fixture pair above: an empty bag would let this render nothing and pass.
+    expect(Object.keys(params).length).toBeGreaterThan(0)
+    expect(renderEveryKey(catalogues, params)).toEqual([])
   })
 })
